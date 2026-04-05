@@ -14,6 +14,19 @@ class Loja(models.Model):
     horario_abertura = models.TimeField(default="07:00")
     horario_fechamento = models.TimeField(default="19:00")
 
+    loja_principal = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='filiais',
+        help_text="Deixe em branco se esta é uma loja principal. Selecione a principal se esta é uma filial."
+    )
+    ativo = models.BooleanField(default=True, help_text="Desativar impede acesso sem excluir a loja.")
+
+    def is_principal(self):
+        return self.loja_principal is None
+
     def __str__(self):
         return self.nome
 
@@ -25,9 +38,15 @@ class PerfilUsuario(models.Model):
         ("admin", "Admin"),
     ]
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    # ForeignKey permite um usuário ter perfis em múltiplas lojas
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='perfis')
     loja = models.ForeignKey(Loja, on_delete=models.CASCADE, null=True, blank=True)
     tipo_usuario = models.CharField(max_length=20, choices=TIPOS_USUARIO, default="funcionario")
+
+    class Meta:
+        unique_together = ('user', 'loja')
+        verbose_name = "Perfil de Usuário"
+        verbose_name_plural = "Perfis de Usuários"
 
     def __str__(self):
         loja_nome = self.loja.nome if self.loja else "Sem loja"
@@ -135,7 +154,16 @@ class Venda(models.Model):
 
 
 class Entregador(models.Model):
+    # Loja PRINCIPAL — entregador serve esta loja e todas as suas filiais
     loja = models.ForeignKey(Loja, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='entregador',
+        help_text="Conta de login para acessar o Painel do Entregador."
+    )
     nome = models.CharField(max_length=120)
     telefone = models.CharField(max_length=30, blank=True)
     ativo = models.BooleanField(default=True)
@@ -145,7 +173,13 @@ class Entregador(models.Model):
     vencimento_cnh = models.DateField(null=True, blank=True)
     endereco = models.CharField(max_length=255, blank=True)
     salario_base = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    comissao_percentual = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    recebe_frete = models.BooleanField(default=False, help_text="Marque se recebe frete fixo por entrega.")
+    valor_frete = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Valor fixo por entrega realizada (somente se recebe_frete estiver marcado)."
+    )
     data_admissao = models.DateField(null=True, blank=True)
     foto = models.ImageField(upload_to='entregadores/', blank=True, null=True)
 
