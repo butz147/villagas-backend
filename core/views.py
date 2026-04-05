@@ -2681,17 +2681,18 @@ def compras_estoque(request):
         })
 
     produtos = Produto.objects.filter(loja=loja).order_by("nome")
+    fornecedores = Fornecedor.objects.filter(loja=loja, ativo=True).order_by("nome")
 
     status = request.GET.get("status", "").strip()
-    fornecedor = request.GET.get("fornecedor", "").strip()
+    fornecedor_filtro = request.GET.get("fornecedor", "").strip()
 
     compras = CompraEstoque.objects.filter(loja=loja)
 
     if status:
         compras = compras.filter(status=status)
 
-    if fornecedor:
-        compras = compras.filter(fornecedor__icontains=fornecedor)
+    if fornecedor_filtro:
+        compras = compras.filter(fornecedor__icontains=fornecedor_filtro)
 
     compras = compras.order_by("-data")[:100]
 
@@ -2765,9 +2766,10 @@ def compras_estoque(request):
     return render(request, "compras_estoque.html", {
         "loja": loja,
         "produtos": produtos,
+        "fornecedores": fornecedores,
         "compras": compras,
         "status": status,
-        "fornecedor": fornecedor,
+        "fornecedor": fornecedor_filtro,
     })
 
 @login_required

@@ -13,6 +13,7 @@
         <option value="">Todos os status</option>
         <option value="pendente" {% if status == "pendente" %}selected{% endif %}>Pendente</option>
         <option value="aprovada" {% if status == "aprovada" %}selected{% endif %}>Aprovada</option>
+        <option value="reprovada" {% if status == "reprovada" %}selected{% endif %}>Reprovada</option>
     </select>
 
     <input type="text" name="fornecedor" placeholder="Buscar por fornecedor..." value="{{ fornecedor }}">
@@ -39,7 +40,7 @@
                     <select name="produto" required>
                         {% for produto in produtos %}
                         <option value="{{ produto.id }}">
-                            {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                            {% if perfil_ativo.tipo_usuario == "admin" %}
                                 {{ produto.nome }} | cheio: {{ produto.estoque_cheio }} | vazio: {{ produto.estoque_vazio }} | custo atual: R$ {{ produto.custo_unitario }}
                             {% else %}
                                 {{ produto.nome }} | cheio: {{ produto.estoque_cheio }} | vazio: {{ produto.estoque_vazio }}
@@ -51,7 +52,12 @@
 
                 <div class="form-group">
                     <label>Fornecedor</label>
-                    <input type="text" name="fornecedor">
+                    <select name="fornecedor">
+                        <option value="">Não informado</option>
+                        {% for f in fornecedores %}
+                            <option value="{{ f.nome }}">{{ f.nome }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -114,7 +120,7 @@
                     <th>Tipo de compra</th>
                     <th>Status</th>
 
-                    {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                    {% if perfil_ativo.tipo_usuario == "admin" %}
                         <th>Custo unitário</th>
                         <th>Custo total</th>
                     {% endif %}
@@ -135,12 +141,14 @@
                     <td>
                         {% if compra.status == "pendente" %}
                             <span class="badge badge-low">Pendente</span>
+                        {% elif compra.status == "reprovada" %}
+                            <span class="badge badge-error">Reprovada</span>
                         {% else %}
                             <span class="badge badge-ok">Aprovada</span>
                         {% endif %}
                     </td>
 
-                    {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                    {% if perfil_ativo.tipo_usuario == "admin" %}
                         <td>
                             {% if compra.custo_unitario_compra %}
                                 R$ {{ compra.custo_unitario_compra }}
@@ -174,7 +182,7 @@
                     </td>
 
                     <td>
-                        {% if compra.status == "pendente" and request.user.perfilusuario.tipo_usuario == "admin" %}
+                        {% if compra.status == "pendente" and perfil_ativo.tipo_usuario == "admin" %}
                             <a class="btn btn-success" href="/compras-estoque/{{ compra.id }}/aprovar/">Aprovar</a>
                         {% else %}
                             -
