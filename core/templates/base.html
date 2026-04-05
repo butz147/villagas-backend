@@ -45,10 +45,25 @@
             <div style="font-weight:700;">{{ request.user.username }}</div>
             {% if request.user.is_authenticated %}
             <small style="opacity:0.7;">
-                {% if request.user.perfilusuario.tipo_usuario == "admin" %}Administrador
-                {% elif request.user.perfilusuario.tipo_usuario == "gerente" %}Gerente
+                {% if perfil_ativo.tipo_usuario == "admin" %}Administrador
+                {% elif perfil_ativo.tipo_usuario == "gerente" %}Gerente
                 {% else %}Funcionário{% endif %}
             </small>
+            {% if lojas_usuario|length > 1 %}
+            <div style="margin-top:6px;">
+                <form method="post" action="/trocar-loja/">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <select name="loja_id" onchange="this.form.submit()" style="font-size:11px;padding:2px 4px;border-radius:4px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:white;cursor:pointer;">
+                        {% for loja in lojas_usuario %}
+                        <option value="{{ loja.id }}" {% if loja == loja_ativa %}selected{% endif %}>{{ loja.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            {% else %}
+            <small style="opacity:0.5;display:block;margin-top:2px;">{{ loja_ativa.nome }}</small>
+            {% endif %}
             {% endif %}
         </div>
     </div>
@@ -60,7 +75,7 @@
             <a href="/clientes/" class="{% if request.path == '/clientes/' %}active{% endif %}"><i class="bi bi-people"></i> Clientes</a>
             <a href="/painel-entregador/" class="{% if request.path == '/painel-entregador/' %}active{% endif %}"><i class="bi bi-truck"></i> Entregas</a>
         </div>
-        {% if request.user.is_authenticated and request.user.perfilusuario.tipo_usuario == "gerente" or request.user.perfilusuario.tipo_usuario == "admin" %}
+        {% if request.user.is_authenticated and perfil_ativo.tipo_usuario == "gerente" or perfil_ativo.tipo_usuario == "admin" %}
         <div class="mobile-nav-section">
             <div class="mobile-nav-title"><i class="bi bi-box-fill"></i> Estoque</div>
             <a href="/estoque-admin/"><i class="bi bi-boxes"></i> Estoque Admin</a>
@@ -85,7 +100,7 @@
             <a href="/alertas-manutencao/"><i class="bi bi-exclamation-triangle"></i> Alertas</a>
         </div>
         {% endif %}
-        {% if request.user.is_authenticated and request.user.perfilusuario.tipo_usuario == "admin" %}
+        {% if request.user.is_authenticated and perfil_ativo.tipo_usuario == "admin" %}
         <div class="mobile-nav-section">
             <div class="mobile-nav-title"><i class="bi bi-gear-fill"></i> Gestão</div>
             <a href="/admin-geral/"><i class="bi bi-shield-lock"></i> Admin Geral</a>
@@ -115,14 +130,29 @@
                 <div class="user-name">{{ request.user.username }}</div>
                 {% if request.user.is_authenticated %}
                     <div class="user-role">
-                        {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                        {% if perfil_ativo.tipo_usuario == "admin" %}
                             <span class="role-badge role-admin"><i class="bi bi-shield-lock-fill"></i> Administrador</span>
-                        {% elif request.user.perfilusuario.tipo_usuario == "gerente" %}
+                        {% elif perfil_ativo.tipo_usuario == "gerente" %}
                             <span class="role-badge role-gerente"><i class="bi bi-star-fill"></i> Gerente</span>
                         {% else %}
                             <span class="role-badge role-func"><i class="bi bi-person-badge-fill"></i> Funcionário</span>
                         {% endif %}
                     </div>
+                    {% if lojas_usuario|length > 1 %}
+                    <div style="margin-top:6px;">
+                        <form method="post" action="/trocar-loja/">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <select name="loja_id" onchange="this.form.submit()" style="width:100%;font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:white;cursor:pointer;">
+                                {% for loja in lojas_usuario %}
+                                <option value="{{ loja.id }}" {% if loja == loja_ativa %}selected{% endif %}>{{ loja.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div style="font-size:11px;opacity:0.6;margin-top:3px;"><i class="bi bi-store"></i> {{ loja_ativa.nome }}</div>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -145,7 +175,7 @@
                 </a>
             </div>
 
-            {% if request.user.is_authenticated and request.user.perfilusuario.tipo_usuario == "gerente" or request.user.perfilusuario.tipo_usuario == "admin" %}
+            {% if request.user.is_authenticated and perfil_ativo.tipo_usuario == "gerente" or perfil_ativo.tipo_usuario == "admin" %}
             <div class="nav-group">
                 <div class="nav-group-title"><i class="bi bi-box-fill"></i> Estoque</div>
                 <a class="{% if request.path == '/estoque-admin/' %}active{% endif %}" href="/estoque-admin/">
@@ -207,7 +237,7 @@
             </div>
             {% endif %}
 
-            {% if request.user.is_authenticated and request.user.perfilusuario.tipo_usuario == "admin" %}
+            {% if request.user.is_authenticated and perfil_ativo.tipo_usuario == "admin" %}
             <div class="nav-group">
                 <div class="nav-group-title"><i class="bi bi-gear-fill"></i> Gestão</div>
                 <a class="{% if request.path == '/admin-geral/' %}active{% endif %}" href="/admin-geral/">

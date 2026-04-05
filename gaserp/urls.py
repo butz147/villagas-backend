@@ -105,7 +105,7 @@ from core.views import (
     notificacoes,
 )
 
-from core.views import notificacoes_json
+from core.views import notificacoes_json, trocar_loja
 
 urlpatterns = [
     # admin django
@@ -216,6 +216,7 @@ urlpatterns = [
     # notificações
     path('notificacoes/', notificacoes),
     path('api/notificacoes/', notificacoes_json),
+    path('trocar-loja/', trocar_loja),
 ]
 
 if settings.DEBUG:

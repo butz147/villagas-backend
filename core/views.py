@@ -56,18 +56,34 @@ from .models import (
 )
 
 
+def obter_loja_ativa(request):
+    """
+    Retorna a loja ativa do usuário considerando seleção multi-loja via sessão.
+    Admins com múltiplos perfis podem trocar de loja sem sair do sistema.
+    """
+    loja_id = request.session.get('loja_ativa_id')
+    if loja_id:
+        try:
+            # Confirma que o usuário tem acesso a esta loja
+            perfil = PerfilUsuario.objects.get(user=request.user, loja_id=loja_id)
+            return perfil.loja
+        except PerfilUsuario.DoesNotExist:
+            pass
+    # Fallback: primeira loja do perfil
+    perfil = PerfilUsuario.objects.filter(user=request.user).first()
+    if perfil and perfil.loja:
+        request.session['loja_ativa_id'] = perfil.loja.id
+        return perfil.loja
+    return None
+
+
 def obter_loja_usuario(user):
-    try:
-        return PerfilUsuario.objects.get(user=user).loja
-    except PerfilUsuario.DoesNotExist:
-        return None
+    perfil = PerfilUsuario.objects.filter(user=user).first()
+    return perfil.loja if perfil else None
 
 
 def obter_perfil_usuario(user):
-    try:
-        return PerfilUsuario.objects.get(user=user)
-    except PerfilUsuario.DoesNotExist:
-        return None
+    return PerfilUsuario.objects.filter(user=user).first()
 
 
 def usuario_eh_funcionario(user):
@@ -1258,7 +1274,7 @@ def criar_pedido_site(request):
 
 @login_required
 def pedidos_json(request):
-    loja = request.user.perfilusuario.loja if hasattr(request.user, "perfilusuario") else None
+    loja = obter_loja_ativa(request)
 
     if not loja:
         return JsonResponse({"erro": "Usuário sem loja vinculada."}, status=400)
@@ -5143,3 +5159,17 @@ def notificacoes(request):
 def notificacoes_json(request):
     nao_lidas = NotificacaoSistema.objects.filter(usuario=request.user, lida=False).count()
     return JsonResponse({"nao_lidas": nao_lidas})
+
+
+@login_required
+def trocar_loja(request):
+    """Permite ao usuário com múltiplos perfis alternar entre lojas."""
+    if request.method == "POST":
+        loja_id = request.POST.get("loja_id")
+        if loja_id:
+            tem_acesso = PerfilUsuario.objects.filter(
+                user=request.user, loja_id=loja_id
+            ).exists()
+            if tem_acesso or request.user.is_staff:
+                request.session['loja_ativa_id'] = int(loja_id)
+    return redirect(request.POST.get("next", "/"))
