@@ -95,6 +95,12 @@ class Produto(models.Model):
     imagem = models.ImageField(upload_to='produtos/', blank=True, null=True)
 
     controla_retorno = models.BooleanField(default=True)
+    frete_entrega = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Valor do frete por unidade deste produto na entrega."
+    )
 
     class Meta:
         ordering = ["nome"]

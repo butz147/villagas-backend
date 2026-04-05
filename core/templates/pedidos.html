@@ -645,14 +645,14 @@
         <select name="produto" id="pedido_produto" required>
           <option value="">Selecione</option>
           {% for produto in produtos %}
-            <option value="{{ produto.id }}" data-preco="{{ produto.preco_venda }}">{{ produto.nome }}</option>
+            <option value="{{ produto.id }}" data-preco="{{ produto.preco_venda }}" data-frete="{{ produto.frete_entrega }}">{{ produto.nome }}</option>
           {% endfor %}
         </select>
       </div>
 
       <div class="field-group">
         <label>Quantidade</label>
-        <input type="number" name="quantidade" value="1" min="1">
+        <input type="number" name="quantidade" id="pedido_quantidade" value="1" min="1">
       </div>
 
       <div class="field-group" id="pedido_preco_grupo">
@@ -740,17 +740,30 @@
   var pagamentoSel = document.getElementById('pedido_pagamento');
   var precoInput = document.getElementById('pedido_preco');
   var precoGrupo = document.getElementById('pedido_preco_grupo');
+  var freteInput = document.getElementById('pedido_frete');
+  var quantidadeInput = document.getElementById('pedido_quantidade');
   var aviso = document.getElementById('pedido_gas_aviso');
 
-  function getPreco() {
+  function getOptData() {
     var opt = produtoSel ? produtoSel.options[produtoSel.selectedIndex] : null;
-    return opt ? (opt.dataset.preco || '') : '';
+    return {
+      preco: opt ? (opt.dataset.preco || '') : '',
+      frete: opt ? parseFloat(opt.dataset.frete || '0') : 0
+    };
+  }
+
+  function atualizarFrete() {
+    if (!freteInput || !quantidadeInput) return;
+    var data = getOptData();
+    var qtd = parseInt(quantidadeInput.value) || 1;
+    freteInput.value = (data.frete * qtd).toFixed(2);
   }
 
   function atualizarPedidoPagamento() {
     if (!pagamentoSel) return;
+    var data = getOptData();
     if (pagamentoSel.value === 'gas_do_povo') {
-      precoInput.value = getPreco();
+      precoInput.value = data.preco;
       precoInput.readOnly = true;
       precoGrupo.style.display = 'none';
       aviso.style.display = 'block';
@@ -759,10 +772,12 @@
       precoGrupo.style.display = '';
       aviso.style.display = 'none';
     }
+    atualizarFrete();
   }
 
   if (pagamentoSel) pagamentoSel.addEventListener('change', atualizarPedidoPagamento);
   if (produtoSel) produtoSel.addEventListener('change', atualizarPedidoPagamento);
+  if (quantidadeInput) quantidadeInput.addEventListener('input', atualizarFrete);
 })();
 </script>
 
