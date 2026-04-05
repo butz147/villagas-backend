@@ -2747,11 +2747,17 @@ def compras_estoque(request):
             status="pendente",
         )
 
+        # Estoque sobe imediatamente ao registrar a chegada
+        produto.estoque_cheio += quantidade
+        if produto.controla_retorno and tipo_compra == "troca":
+            produto.estoque_vazio -= quantidade
+        produto.save()
+
         registrar_auditoria(
             loja=loja,
             usuario=request.user,
             acao="Compra de estoque registrada",
-            descricao=f"Compra #{compra.id} | Produto: {produto.nome} | Quantidade: {quantidade} | Tipo compra: {tipo_compra} | Fornecedor: {fornecedor_post}"
+            descricao=f"Compra #{compra.id} | Produto: {produto.nome} | Quantidade: {quantidade} | Tipo compra: {tipo_compra} | Fornecedor: {fornecedor_post} | Estoque atualizado imediatamente."
         )
 
         return redirect("/compras-estoque/")
@@ -3423,14 +3429,6 @@ def aprovar_compra_estoque(request, compra_id):
     produto = compra.produto
     quantidade_nova = compra.quantidade
 
-    if produto.controla_retorno and compra.tipo_compra == "troca":
-        if produto.estoque_vazio < quantidade_nova:
-            return render(request, "aprovar_compra_estoque.html", {
-                "loja": loja,
-                "compra": compra,
-                "erro": "Estoque vazio insuficiente para aprovar essa troca."
-            })
-
     estoque_atual = produto.estoque_cheio
     custo_atual = Decimal(produto.custo_unitario or 0)
     quantidade_total = estoque_atual + quantidade_nova
@@ -3452,28 +3450,10 @@ def aprovar_compra_estoque(request, compra_id):
     compra.aprovado_em = timezone.now()
     compra.save()
 
-    produto.estoque_cheio += quantidade_nova
-
-    if produto.controla_retorno and compra.tipo_compra == "troca":
-        produto.estoque_vazio -= quantidade_nova
-
+    # Estoque já foi atualizado no momento do registro.
+    # Aqui apenas atualizamos o custo médio do produto.
     produto.custo_unitario = novo_custo_medio.quantize(Decimal("0.01"))
     produto.save()
-
-    motivo = f"Compra aprovada - fornecedor: {compra.fornecedor or 'Não informado'}"
-    if produto.controla_retorno and compra.tipo_compra == "troca":
-        motivo += " | troca de vazio por cheio"
-    else:
-        motivo += " | entrada somente de cheio"
-
-    MovimentacaoEstoque.objects.create(
-        loja=loja,
-        produto=produto,
-        usuario=request.user,
-        tipo="entrada",
-        quantidade=quantidade_nova,
-        motivo=motivo
-    )
 
     registrar_auditoria(
         loja=loja,
@@ -3483,6 +3463,58 @@ def aprovar_compra_estoque(request, compra_id):
     )
 
     return redirect("/compras-estoque/")
+
+
+@login_required
+def reprovar_compra_estoque(request, compra_id):
+    loja = obter_loja_usuario(request.user)
+
+    if not loja:
+        return render(request, "erro_loja.html")
+
+    if not usuario_eh_admin(request.user):
+        return render(request, "operacao_bloqueada.html", {
+            "mensagem": "Apenas administradores podem reprovar compras de estoque."
+        })
+
+    if request.method != "POST":
+        return redirect("/compras-estoque/")
+
+    try:
+        compra = CompraEstoque.objects.get(id=compra_id, loja=loja)
+    except CompraEstoque.DoesNotExist:
+        return render(request, "operacao_bloqueada.html", {
+            "mensagem": "Compra não encontrada."
+        })
+
+    if compra.status != "pendente":
+        return render(request, "operacao_bloqueada.html", {
+            "mensagem": "Só é possível reprovar compras com status Pendente."
+        })
+
+    produto = compra.produto
+    quantidade = compra.quantidade
+
+    # Reverter estoque que foi aplicado no registro
+    produto.estoque_cheio -= quantidade
+    if produto.controla_retorno and compra.tipo_compra == "troca":
+        produto.estoque_vazio += quantidade
+    produto.save()
+
+    compra.status = "reprovada"
+    compra.aprovado_por = request.user
+    compra.aprovado_em = timezone.now()
+    compra.save()
+
+    registrar_auditoria(
+        loja=loja,
+        usuario=request.user,
+        acao="Compra de estoque reprovada",
+        descricao=f"Compra #{compra.id} | Produto: {produto.nome} | Quantidade: {quantidade} | Estoque revertido."
+    )
+
+    return redirect("/compras-estoque/")
+
 
 @login_required
 def estoque_admin(request):

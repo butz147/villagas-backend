@@ -43,6 +43,7 @@ from core.views import (
     # compras
     compras_estoque,
     aprovar_compra_estoque,
+    reprovar_compra_estoque,
 
     # financeiro
     despesas,
@@ -157,6 +158,7 @@ urlpatterns = [
     # compras de estoque
     path('compras-estoque/', compras_estoque),
     path('compras-estoque/<int:compra_id>/aprovar/', aprovar_compra_estoque),
+    path('compras-estoque/<int:compra_id>/reprovar/', reprovar_compra_estoque),
 
     # financeiro
     path('despesas/', despesas),

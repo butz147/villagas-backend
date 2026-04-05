@@ -336,6 +336,7 @@ class CompraEstoque(models.Model):
     STATUS_CHOICES = [
         ("pendente", "Pendente"),
         ("aprovada", "Aprovada"),
+        ("reprovada", "Reprovada"),
     ]
 
     TIPO_COMPRA_CHOICES = [
