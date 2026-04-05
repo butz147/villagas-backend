@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Cliente{% endblock %}
+
+{% block content %}
+<style>
+    .page-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+    .page-title h1 { margin:0; font-size:28px; font-weight:800; color:#1f2937; }
+    .page-title p { margin:6px 0 0; color:#6b7280; font-size:14px; }
+    .panel-card { background:#fff; border:1px solid #e5e7eb; border-radius:20px; padding:20px; box-shadow:0 8px 24px rgba(15,23,42,.04); }
+    .form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px; }
+    .field-group label { display:block; font-size:13px; font-weight:700; color:#374151; margin-bottom:6px; }
+    .field-group input, .field-group textarea { width:100%; border:1px solid #d1d5db; border-radius:12px; padding:12px 14px; font-size:14px; box-sizing:border-box; }
+    .field-group input { height:44px; }
+    .field-group textarea { min-height:110px; resize:vertical; }
+    .field-full { grid-column:1 / -1; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+    .btn-main, .btn-light { display:inline-flex; align-items:center; justify-content:center; height:44px; padding:0 16px; border-radius:12px; font-weight:700; font-size:14px; text-decoration:none; border:none; cursor:pointer; }
+    .btn-main { background:#f59e0b; color:#fff; }
+    .btn-light { background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; }
+    .error-box { margin-bottom:16px; padding:12px 14px; border-radius:12px; background:#fee2e2; color:#991b1b; font-weight:700; }
+</style>
+
+<div class="page-header">
+    <div class="page-title">
+        <h1>Novo cliente</h1>
+        <p>Loja: <strong>{{ loja.nome }}</strong></p>
+    </div>
+</div>
+
+<div class="panel-card">
+    {% if erro %}
+        <div class="error-box">{{ erro }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="field-group">
+                <label>Nome</label>
+                <input type="text" name="nome" required>
+            </div>
+
+            <div class="field-group">
+                <label>Telefone</label>
+                <input type="text" name="telefone">
+            </div>
+
+            <div class="field-group field-full">
+                <label>Endereço</label>
+                <input type="text" name="endereco">
+            </div>
+
+            <div class="field-group field-full">
+                <label>Observações</label>
+                <textarea name="observacoes"></textarea>
+            </div>
+
+            <div class="field-group field-full">
+                <label>Observação comercial</label>
+                <textarea name="observacao_comercial"></textarea>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn-main">Cadastrar cliente</button>
+            <a href="{% url 'lista_clientes' %}" class="btn-light">Voltar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

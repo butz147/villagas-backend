@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Metas de Vendas</h1>
+</div>
+
+{% for msg in messages %}
+<div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+{% endfor %}
+
+{% if progresso %}
+<h3 style="margin-bottom:10px;">Progresso do Mês Atual</h3>
+<div class="metric-grid">
+    <div class="metric-card">
+        <div class="metric-value">R$ {{ progresso.faturamento_atual|floatformat:2 }}</div>
+        <div class="metric-label">Faturamento (Meta: R$ {{ progresso.faturamento_meta|floatformat:2 }})</div>
+        <div style="background:#eee;border-radius:10px;height:10px;margin-top:8px;">
+            <div style="background:{% if progresso.faturamento_pct >= 100 %}#27ae60{% elif progresso.faturamento_pct >= 70 %}#f39c12{% else %}#e74c3c{% endif %};height:10px;border-radius:10px;width:{% if progresso.faturamento_pct > 100 %}100{% else %}{{ progresso.faturamento_pct }}{% endif %}%;"></div>
+        </div>
+        <small>{{ progresso.faturamento_pct }}%</small>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ progresso.vendas_atual }}</div>
+        <div class="metric-label">Vendas (Meta: {{ progresso.vendas_meta }})</div>
+        <div style="background:#eee;border-radius:10px;height:10px;margin-top:8px;">
+            <div style="background:{% if progresso.vendas_pct >= 100 %}#27ae60{% elif progresso.vendas_pct >= 70 %}#f39c12{% else %}#e74c3c{% endif %};height:10px;border-radius:10px;width:{% if progresso.vendas_pct > 100 %}100{% else %}{{ progresso.vendas_pct }}{% endif %}%;"></div>
+        </div>
+        <small>{{ progresso.vendas_pct }}%</small>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ progresso.clientes_atual }}</div>
+        <div class="metric-label">Novos Clientes (Meta: {{ progresso.clientes_meta }})</div>
+        <div style="background:#eee;border-radius:10px;height:10px;margin-top:8px;">
+            <div style="background:{% if progresso.clientes_pct >= 100 %}#27ae60{% elif progresso.clientes_pct >= 70 %}#f39c12{% else %}#e74c3c{% endif %};height:10px;border-radius:10px;width:{% if progresso.clientes_pct > 100 %}100{% else %}{{ progresso.clientes_pct }}{% endif %}%;"></div>
+        </div>
+        <small>{{ progresso.clientes_pct }}%</small>
+    </div>
+</div>
+{% endif %}
+
+<div class="form-card" style="margin-bottom:20px;">
+    <h3>Definir / Atualizar Meta</h3>
+    <form method="post" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+        {% csrf_token %}
+        <div>
+            <label>Mês *</label>
+            <input type="number" name="mes" class="form-input" min="1" max="12" value="{{ hoje.month }}" required>
+        </div>
+        <div>
+            <label>Ano *</label>
+            <input type="number" name="ano" class="form-input" min="2024" value="{{ hoje.year }}" required>
+        </div>
+        <div>
+            <label>Meta Faturamento (R$)</label>
+            <input type="number" name="meta_faturamento" class="form-input" min="0" step="0.01" value="0">
+        </div>
+        <div>
+            <label>Meta Qtd Vendas</label>
+            <input type="number" name="meta_quantidade_vendas" class="form-input" min="0" value="0">
+        </div>
+        <div>
+            <label>Meta Novos Clientes</label>
+            <input type="number" name="meta_novos_clientes" class="form-input" min="0" value="0">
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar Meta</button>
+    </form>
+</div>
+
+<div class="table-card">
+    <h3>Histórico de Metas</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Período</th>
+                <th>Meta Faturamento</th>
+                <th>Meta Vendas</th>
+                <th>Meta Novos Clientes</th>
+                <th>Criado por</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in metas %}
+            <tr>
+                <td>{{ m.mes }}/{{ m.ano }}</td>
+                <td>R$ {{ m.meta_faturamento|floatformat:2 }}</td>
+                <td>{{ m.meta_quantidade_vendas }}</td>
+                <td>{{ m.meta_novos_clientes }}</td>
+                <td>{{ m.criado_por.username|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;">Nenhuma meta definida.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Checklist de Veículos</h1>
+</div>
+
+{% for msg in messages %}
+<div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+{% endfor %}
+
+<div class="form-card" style="margin-bottom:20px;">
+    <h3>Novo Checklist</h3>
+    <form method="post">
+        {% csrf_token %}
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
+            <div>
+                <label>Veículo *</label>
+                <select name="veiculo" class="form-input" required>
+                    <option value="">Selecione</option>
+                    {% for v in veiculos %}
+                    <option value="{{ v.id }}">{{ v.placa }} - {{ v.modelo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Entregador</label>
+                <select name="entregador" class="form-input">
+                    <option value="">Selecione</option>
+                    {% for e in entregadores %}
+                    <option value="{{ e.id }}">{{ e.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>KM Atual</label>
+                <input type="number" name="km_atual" class="form-input" min="0">
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:15px;">
+            <label class="checklist-item"><input type="checkbox" name="pneus_ok" checked> Pneus OK</label>
+            <label class="checklist-item"><input type="checkbox" name="freios_ok" checked> Freios OK</label>
+            <label class="checklist-item"><input type="checkbox" name="oleo_ok" checked> Óleo OK</label>
+            <label class="checklist-item"><input type="checkbox" name="agua_ok" checked> Água OK</label>
+            <label class="checklist-item"><input type="checkbox" name="luzes_ok" checked> Luzes OK</label>
+            <label class="checklist-item"><input type="checkbox" name="limpeza_ok" checked> Limpeza OK</label>
+            <label class="checklist-item"><input type="checkbox" name="documentos_ok" checked> Documentos OK</label>
+            <label class="checklist-item"><input type="checkbox" name="extintor_ok" checked> Extintor OK</label>
+            <label class="checklist-item"><input type="checkbox" name="carga_ok" checked> Carga OK</label>
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label>Observações</label>
+            <textarea name="observacoes" class="form-input" rows="2" placeholder="Observações adicionais..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Registrar Checklist</button>
+    </form>
+</div>
+
+<div class="table-card">
+    <h3>Últimos Checklists</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Veículo</th>
+                <th>Entregador</th>
+                <th>KM</th>
+                <th>Resultado</th>
+                <th>Detalhes</th>
+                <th>Registrado por</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in checklists %}
+            <tr>
+                <td>{{ c.data|date:"d/m/Y H:i" }}</td>
+                <td>{{ c.veiculo.placa }} - {{ c.veiculo.modelo }}</td>
+                <td>{{ c.entregador.nome|default:"-" }}</td>
+                <td>{{ c.km_atual|default:"-" }}</td>
+                <td>
+                    {% if c.percentual_ok == 100 %}
+                    <span class="badge badge-success">{{ c.total_itens_ok }}/{{ c.total_itens }} OK</span>
+                    {% elif c.percentual_ok >= 70 %}
+                    <span class="badge badge-warning">{{ c.total_itens_ok }}/{{ c.total_itens }} OK</span>
+                    {% else %}
+                    <span class="badge badge-danger">{{ c.total_itens_ok }}/{{ c.total_itens }} OK</span>
+                    {% endif %}
+                </td>
+                <td style="font-size:0.85em;">
+                    {% if not c.pneus_ok %}<span class="badge badge-danger">Pneus</span>{% endif %}
+                    {% if not c.freios_ok %}<span class="badge badge-danger">Freios</span>{% endif %}
+                    {% if not c.oleo_ok %}<span class="badge badge-danger">Óleo</span>{% endif %}
+                    {% if not c.agua_ok %}<span class="badge badge-danger">Água</span>{% endif %}
+                    {% if not c.luzes_ok %}<span class="badge badge-danger">Luzes</span>{% endif %}
+                    {% if not c.limpeza_ok %}<span class="badge badge-danger">Limpeza</span>{% endif %}
+                    {% if not c.documentos_ok %}<span class="badge badge-danger">Docs</span>{% endif %}
+                    {% if not c.extintor_ok %}<span class="badge badge-danger">Extintor</span>{% endif %}
+                    {% if not c.carga_ok %}<span class="badge badge-danger">Carga</span>{% endif %}
+                    {% if c.percentual_ok == 100 %}<span style="color:#27ae60;">Tudo OK</span>{% endif %}
+                </td>
+                <td>{{ c.registrado_por.username|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" style="text-align:center;">Nenhum checklist registrado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoria do Sistema{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Auditoria do Sistema</h1>
+    <p>Loja: {{ loja.nome }} | Histórico das ações importantes</p>
+</div>
+
+<form method="GET" class="search-bar">
+    <input type="text" name="q" placeholder="Buscar ação ou descrição..." value="{{ busca }}">
+    <input type="text" name="usuario" placeholder="Buscar por usuário..." value="{{ usuario_busca }}">
+    <input type="date" name="data_inicio" value="{{ data_inicio }}">
+    <input type="date" name="data_fim" value="{{ data_fim }}">
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+</form>
+
+<div class="card">
+    <div class="section-title">Últimas ações</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Usuário</th>
+                    <th>Ação</th>
+                    <th>Descrição</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in auditorias %}
+                <tr>
+                    <td>{{ item.data|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if item.usuario %}
+                            {{ item.usuario.username }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ item.acao }}</td>
+                    <td>{{ item.descricao|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">Nenhum registro encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

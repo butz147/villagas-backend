@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Saldo de Caixa{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Saldo de Caixa</h1>
+    <p>Loja: {{ loja.nome }} | Evolução acumulada do caixa</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card {% if saldo_atual >= 0 %}metric-green{% else %}metric-red{% endif %}">
+        <div class="metric-icon">💰</div>
+        <h3>Saldo atual acumulado</h3>
+        <div class="value {% if saldo_atual >= 0 %}positive{% else %}negative{% endif %}">
+            R$ {{ saldo_atual }}
+        </div>
+        <p>Resultado consolidado</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon">📅</div>
+        <h3>Total de fechamentos</h3>
+        <div class="value">{{ historico|length }}</div>
+        <p>Dias acumulados</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Histórico do caixa</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Vendas</th>
+                    <th>Pedidos</th>
+                    <th>Despesas</th>
+                    <th>Retiradas</th>
+                    <th>Resultado do dia</th>
+                    <th>Saldo acumulado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in historico %}
+                <tr>
+                    <td>{{ item.data|date:"d/m/Y" }}</td>
+                    <td>R$ {{ item.total_vendas }}</td>
+                    <td>R$ {{ item.total_pedidos }}</td>
+                    <td>R$ {{ item.total_despesas }}</td>
+                    <td>R$ {{ item.total_retiradas }}</td>
+                    <td>
+                        {% if item.total_geral < 0 %}
+                            <span class="badge badge-danger">R$ {{ item.total_geral }}</span>
+                        {% else %}
+                            <span class="badge badge-ok">R$ {{ item.total_geral }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.saldo_acumulado < 0 %}
+                            <span class="badge badge-danger">R$ {{ item.saldo_acumulado }}</span>
+                        {% else %}
+                            <span class="badge badge-ok">R$ {{ item.saldo_acumulado }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">Nenhum fechamento encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Vendas Antecipadas{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Vendas Antecipadas</h1>
+    <p>Loja: {{ loja.nome }} | Cliente paga agora e retira/recebe depois</p>
+</div>
+
+{% if erro %}
+<div class="alert alert-danger" style="margin-bottom:16px;">{{ erro }}</div>
+{% endif %}
+
+<div class="grid">
+    <div class="card metric-card metric-green">
+        <div class="metric-icon"><i class="bi bi-cash-stack"></i></div>
+        <h3>Valor pendente</h3>
+        <div class="value">R$ {{ valor_pendente|floatformat:2 }}</div>
+        <p>Total pago antecipadamente</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon"><i class="bi bi-hourglass-split"></i></div>
+        <h3>Pendentes</h3>
+        <div class="value">{{ total_pendentes }}</div>
+        <p>Aguardando retirada/entrega</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Nova venda antecipada</div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="nova">
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Cliente</label>
+                    <select name="cliente" required>
+                        <option value="">Selecione...</option>
+                        {% for c in clientes %}
+                        <option value="{{ c.id }}">{{ c.nome }} {% if c.telefone %}- {{ c.telefone }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Produto</label>
+                    <select name="produto" required>
+                        <option value="">Selecione...</option>
+                        {% for p in produtos %}
+                        <option value="{{ p.id }}">{{ p.nome }} - R$ {{ p.preco_venda }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" name="quantidade" value="1" min="1" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Valor pago (R$)</label>
+                    <input type="number" step="0.01" name="valor_pago" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Forma de pagamento</label>
+                    <select name="forma_pagamento">
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="pix">Pix</option>
+                        <option value="credito">Crédito</option>
+                        <option value="debito">Débito</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top:14px;">
+                <label>Observações</label>
+                <textarea name="observacoes" placeholder="Ex: Cliente vai buscar sexta-feira"></textarea>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button type="submit" class="btn btn-success">Registrar venda antecipada</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Filtrar por status</div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="?status=pendente" class="btn {% if status_filtro == 'pendente' %}btn-success{% else %}btn-outline{% endif %}">Pendentes</a>
+            <a href="?status=utilizada" class="btn {% if status_filtro == 'utilizada' %}btn-success{% else %}btn-outline{% endif %}">Utilizadas</a>
+            <a href="?status=cancelada" class="btn {% if status_filtro == 'cancelada' %}btn-success{% else %}btn-outline{% endif %}">Canceladas</a>
+            <a href="?status=" class="btn {% if not status_filtro %}btn-success{% else %}btn-outline{% endif %}">Todas</a>
+        </div>
+
+        <div class="alert alert-success" style="margin-top:16px;">
+            O cliente paga antecipadamente e depois retira ou recebe o produto. Quando entregar, clique em "Utilizar".
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Lista de vendas antecipadas</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Produto</th>
+                    <th>Qtd</th>
+                    <th>Valor pago</th>
+                    <th>Pagamento</th>
+                    <th>Status</th>
+                    <th>Observações</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for va in vendas %}
+                <tr>
+                    <td>{{ va.data|date:"d/m/Y H:i" }}</td>
+                    <td>{{ va.cliente.nome }}</td>
+                    <td>{{ va.produto.nome }}</td>
+                    <td>{{ va.quantidade }}</td>
+                    <td>R$ {{ va.valor_pago|floatformat:2 }}</td>
+                    <td>{{ va.get_forma_pagamento_display }}</td>
+                    <td>
+                        {% if va.status == "pendente" %}
+                            <span class="badge badge-warning">Pendente</span>
+                        {% elif va.status == "utilizada" %}
+                            <span class="badge badge-success">Utilizada</span>
+                        {% else %}
+                            <span class="badge badge-danger">Cancelada</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ va.observacoes|default:"-"|truncatechars:30 }}</td>
+                    <td>
+                        {% if va.status == "pendente" %}
+                        <form method="POST" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="acao" value="utilizar">
+                            <input type="hidden" name="venda_antecipada_id" value="{{ va.id }}">
+                            <button type="submit" class="btn btn-sm btn-success" title="Marcar como utilizada">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </form>
+                        <form method="POST" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="acao" value="cancelar">
+                            <input type="hidden" name="venda_antecipada_id" value="{{ va.id }}">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Cancelar">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </form>
+                        {% elif va.status == "utilizada" %}
+                            {{ va.utilizada_em|date:"d/m H:i" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">Nenhuma venda antecipada encontrada</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

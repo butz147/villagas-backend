@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Lucro Diário{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Lucro Diário</h1>
+    <p>Loja: {{ loja.nome }} | Data: {{ data|date:"d/m/Y" }}</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon">💵</div>
+        <h3>Faturamento em vendas</h3>
+        <div class="value">R$ {{ total_vendas }}</div>
+        <p>Quantidade: {{ quantidade_vendas }}</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon">🧾</div>
+        <h3>Faturamento em pedidos</h3>
+        <div class="value">R$ {{ total_pedidos }}</div>
+        <p>Quantidade: {{ quantidade_pedidos }}</p>
+    </div>
+
+    <div class="card metric-card metric-red">
+        <div class="metric-icon">💸</div>
+        <h3>Despesas</h3>
+        <div class="value">R$ {{ total_despesas }}</div>
+        <p>Quantidade: {{ quantidade_despesas }}</p>
+    </div>
+
+    <div class="card metric-card metric-red">
+        <div class="metric-icon">📤</div>
+        <h3>Retiradas</h3>
+        <div class="value">R$ {{ total_retiradas }}</div>
+        <p>Quantidade: {{ quantidade_retiradas }}</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-green">
+        <div class="metric-icon">📈</div>
+        <h3>Lucro nas vendas</h3>
+        <div class="value positive">R$ {{ lucro_vendas }}</div>
+    </div>
+
+    <div class="card metric-card metric-green">
+        <div class="metric-icon">📊</div>
+        <h3>Lucro nos pedidos</h3>
+        <div class="value positive">R$ {{ lucro_pedidos }}</div>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon">🏦</div>
+        <h3>Lucro bruto</h3>
+        <div class="value positive">R$ {{ lucro_bruto }}</div>
+        <p>Lucro das vendas + pedidos</p>
+    </div>
+
+    <div class="card metric-card {% if lucro_liquido >= 0 %}metric-green{% else %}metric-red{% endif %}">
+        <div class="metric-icon">✅</div>
+        <h3>Lucro líquido</h3>
+        <div class="value {% if lucro_liquido >= 0 %}positive{% else %}negative{% endif %}">
+            R$ {{ lucro_liquido }}
+        </div>
+        <p>Resultado real do dia</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Resumo financeiro real</div>
+
+    <div class="table-wrap">
+        <table>
+            <tbody>
+                <tr>
+                    <th>Faturamento com vendas</th>
+                    <td>R$ {{ total_vendas }}</td>
+                </tr>
+                <tr>
+                    <th>Faturamento com pedidos</th>
+                    <td>R$ {{ total_pedidos }}</td>
+                </tr>
+                <tr>
+                    <th>Lucro em vendas</th>
+                    <td>R$ {{ lucro_vendas }}</td>
+                </tr>
+                <tr>
+                    <th>Lucro em pedidos</th>
+                    <td>R$ {{ lucro_pedidos }}</td>
+                </tr>
+                <tr>
+                    <th>Despesas</th>
+                    <td>R$ {{ total_despesas }}</td>
+                </tr>
+                <tr>
+                    <th>Retiradas</th>
+                    <td>R$ {{ total_retiradas }}</td>
+                </tr>
+                <tr>
+                    <th>Lucro líquido final</th>
+                    <td><strong>R$ {{ lucro_liquido }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

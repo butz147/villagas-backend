@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}DRE Mensal{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>DRE Mensal</h1>
+    <p>Loja: {{ loja.nome }} | Competência: {{ mes }}/{{ ano }}</p>
+</div>
+
+<div class="card">
+    <div class="section-title">Filtro</div>
+
+    <form method="GET">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Mês</label>
+                <input type="number" name="mes" min="1" max="12" value="{{ mes }}">
+            </div>
+
+            <div class="form-group">
+                <label>Ano</label>
+                <input type="number" name="ano" min="2020" max="2100" value="{{ ano }}">
+            </div>
+        </div>
+
+        <div style="margin-top:16px;">
+            <button type="submit" class="btn btn-success">Aplicar filtro</button>
+        </div>
+    </form>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon">💵</div>
+        <h3>Total vendido</h3>
+        <div class="value">R$ {{ total_vendas }}</div>
+        <p>Receita bruta do mês</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon">📦</div>
+        <h3>Custo das vendas</h3>
+        <div class="value">R$ {{ custo_total }}</div>
+        <p>Custo médio aplicado</p>
+    </div>
+
+    <div class="card metric-card metric-green">
+        <div class="metric-icon">📈</div>
+        <h3>Lucro bruto</h3>
+        <div class="value positive">R$ {{ lucro_bruto }}</div>
+        <p>Antes de despesas e retiradas</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-red">
+        <div class="metric-icon">💸</div>
+        <h3>Despesas</h3>
+        <div class="value">R$ {{ total_despesas }}</div>
+        <p>Saídas operacionais</p>
+    </div>
+
+    <div class="card metric-card metric-red">
+        <div class="metric-icon">📤</div>
+        <h3>Retiradas</h3>
+        <div class="value">R$ {{ total_retiradas }}</div>
+        <p>Saídas de caixa</p>
+    </div>
+
+    <div class="card metric-card {% if lucro_liquido >= 0 %}metric-green{% else %}metric-red{% endif %}">
+        <div class="metric-icon">🏦</div>
+        <h3>Lucro líquido</h3>
+        <div class="value {% if lucro_liquido >= 0 %}positive{% else %}negative{% endif %}">
+            R$ {{ lucro_liquido }}
+        </div>
+        <p>Resultado final do mês</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Resumo DRE</div>
+
+    <div class="table-wrap">
+        <table>
+            <tbody>
+                <tr>
+                    <th>Receita total com vendas</th>
+                    <td>R$ {{ total_vendas }}</td>
+                </tr>
+                <tr>
+                    <th>Custo total das vendas</th>
+                    <td>R$ {{ custo_total }}</td>
+                </tr>
+                <tr>
+                    <th>Lucro bruto</th>
+                    <td>R$ {{ lucro_bruto }}</td>
+                </tr>
+                <tr>
+                    <th>Despesas operacionais</th>
+                    <td>R$ {{ total_despesas }}</td>
+                </tr>
+                <tr>
+                    <th>Retiradas</th>
+                    <td>R$ {{ total_retiradas }}</td>
+                </tr>
+                <tr>
+                    <th>Lucro líquido do mês</th>
+                    <td><strong>R$ {{ lucro_liquido }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

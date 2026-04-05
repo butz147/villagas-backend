@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Inventário de Estoque{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Inventário de Estoque</h1>
+    <p>Loja: {{ loja.nome }} | Faça a conferência física do estoque.</p>
+</div>
+
+<div class="card">
+    <div class="section-title">Contagem física</div>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="form-group" style="margin-bottom:18px;">
+            <label>Observações</label>
+            <textarea name="observacoes"></textarea>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Cheio no sistema</th>
+                        <th>Vazio no sistema</th>
+                        <th>Cheio contado</th>
+                        <th>Vazio contado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for produto in produtos %}
+                    <tr>
+                        <td>{{ produto.nome }}</td>
+                        <td>{{ produto.estoque_cheio }}</td>
+                        <td>{{ produto.estoque_vazio }}</td>
+                        <td>
+                            <input type="number" name="cheio_{{ produto.id }}" value="{{ produto.estoque_cheio }}">
+                        </td>
+                        <td>
+                            <input type="number" name="vazio_{{ produto.id }}" value="{{ produto.estoque_vazio }}">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top:18px;">
+            <div class="alert alert-error">
+                Ao salvar o inventário, o estoque do sistema será ajustado para os valores contados.
+            </div>
+            <button type="submit" class="btn btn-success">Salvar inventário</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

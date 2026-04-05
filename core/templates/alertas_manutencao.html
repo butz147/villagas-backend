@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Alertas de Manutenção</h1>
+</div>
+
+{% for msg in messages %}
+<div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+{% endfor %}
+
+<div class="metric-grid">
+    <div class="metric-card" style="border-left:4px solid #e74c3c;">
+        <div class="metric-value">{{ alertas_ativos }}</div>
+        <div class="metric-label">Alertas Ativos</div>
+    </div>
+</div>
+
+<div style="display:flex;gap:10px;margin-bottom:15px;">
+    <a href="?status=ativo" class="btn {% if filtro_status == 'ativo' %}btn-primary{% else %}btn-secondary{% endif %}">Ativos</a>
+    <a href="?status=resolvido" class="btn {% if filtro_status == 'resolvido' %}btn-primary{% else %}btn-secondary{% endif %}">Resolvidos</a>
+    <a href="?status=ignorado" class="btn {% if filtro_status == 'ignorado' %}btn-primary{% else %}btn-secondary{% endif %}">Ignorados</a>
+    <a href="?status=" class="btn {% if not filtro_status %}btn-primary{% else %}btn-secondary{% endif %}">Todos</a>
+</div>
+
+<div class="form-card" style="margin-bottom:20px;">
+    <h3>Novo Alerta</h3>
+    <form method="post" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="novo_alerta">
+        <div>
+            <label>Veículo *</label>
+            <select name="veiculo" class="form-input" required>
+                <option value="">Selecione</option>
+                {% for v in veiculos %}
+                <option value="{{ v.id }}">{{ v.placa }} - {{ v.modelo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Tipo *</label>
+            <select name="tipo" class="form-input" required>
+                <option value="km">Por Quilometragem</option>
+                <option value="data">Por Data</option>
+                <option value="documento">Documento/Licença</option>
+            </select>
+        </div>
+        <div>
+            <label>Título *</label>
+            <input type="text" name="titulo" class="form-input" required placeholder="Ex: Troca de óleo">
+        </div>
+        <div>
+            <label>KM Alerta</label>
+            <input type="number" name="km_alerta" class="form-input" min="0">
+        </div>
+        <div>
+            <label>Data Alerta</label>
+            <input type="date" name="data_alerta" class="form-input">
+        </div>
+        <div style="width:100%;">
+            <label>Descrição</label>
+            <input type="text" name="descricao" class="form-input" placeholder="Detalhes do alerta...">
+        </div>
+        <button type="submit" class="btn btn-primary">Criar Alerta</button>
+    </form>
+</div>
+
+<div class="table-card">
+    <table>
+        <thead>
+            <tr>
+                <th>Veículo</th>
+                <th>Tipo</th>
+                <th>Título</th>
+                <th>Descrição</th>
+                <th>KM/Data</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in alertas %}
+            <tr>
+                <td>{{ a.veiculo.placa }}</td>
+                <td>{{ a.get_tipo_display }}</td>
+                <td><strong>{{ a.titulo }}</strong></td>
+                <td>{{ a.descricao|default:"-" }}</td>
+                <td>
+                    {% if a.km_alerta %}{{ a.km_alerta }} km{% endif %}
+                    {% if a.data_alerta %}{{ a.data_alerta|date:"d/m/Y" }}{% endif %}
+                </td>
+                <td>
+                    {% if a.status == "ativo" %}<span class="badge badge-danger">Ativo</span>
+                    {% elif a.status == "resolvido" %}<span class="badge badge-success">Resolvido</span>
+                    {% else %}<span class="badge badge-secondary">Ignorado</span>{% endif %}
+                </td>
+                <td>
+                    {% if a.status == "ativo" %}
+                    <form method="post" style="display:inline;">{% csrf_token %}
+                        <input type="hidden" name="acao" value="resolver_alerta">
+                        <input type="hidden" name="alerta_id" value="{{ a.id }}">
+                        <button type="submit" class="btn btn-sm btn-success">Resolver</button>
+                    </form>
+                    <form method="post" style="display:inline;">{% csrf_token %}
+                        <input type="hidden" name="acao" value="ignorar_alerta">
+                        <input type="hidden" name="alerta_id" value="{{ a.id }}">
+                        <button type="submit" class="btn btn-sm btn-secondary">Ignorar</button>
+                    </form>
+                    {% endif %}
+                    {% if a.resolvido_por %}
+                    <small>por {{ a.resolvido_por.username }}</small>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" style="text-align:center;">Nenhum alerta encontrado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

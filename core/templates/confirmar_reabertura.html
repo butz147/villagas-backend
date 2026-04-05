@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reabrir Fechamento</title>
+
+    <style>
+        body{
+            font-family: Arial;
+            background:#f4f6f9;
+            padding:50px;
+        }
+
+        .card{
+            max-width:650px;
+            margin:auto;
+            background:white;
+            padding:30px;
+            border-radius:10px;
+            box-shadow:0 0 10px rgba(0,0,0,0.08);
+            text-align:center;
+        }
+
+        h1{
+            color:#dc3545;
+        }
+
+        p{
+            font-size:16px;
+        }
+
+        .acoes{
+            margin-top:25px;
+        }
+
+        .acoes button,
+        .acoes a{
+            display:inline-block;
+            padding:10px 16px;
+            margin:0 8px;
+            border:none;
+            border-radius:5px;
+            text-decoration:none;
+            cursor:pointer;
+            font-size:15px;
+        }
+
+        .btn-confirmar{
+            background:#dc3545;
+            color:white;
+        }
+
+        .btn-voltar{
+            background:#0d6efd;
+            color:white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Reabrir fechamento</h1>
+
+    <p>
+        Você está prestes a reabrir o fechamento da data
+        <strong>{{ fechamento.data|date:"d/m/Y" }}</strong>
+        da loja <strong>{{ loja.nome }}</strong>.
+    </p>
+
+    <p>
+        Depois disso, o sistema voltará a permitir lançamentos nesse dia.
+    </p>
+
+    <div class="acoes">
+        <form method="POST" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn-confirmar">Confirmar reabertura</button>
+        </form>
+
+        <a href="/historico-fechamentos/" class="btn-voltar">Cancelar</a>
+    </div>
+</div>
+
+</body>
+</html>

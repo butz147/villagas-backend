@@ -1,0 +1,22 @@
+{
+  "name": "VillaGás ERP",
+  "short_name": "VillaGás",
+  "description": "Sistema de gestão da VillaGás",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07133d",
+  "theme_color": "#0d1d56",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/static/core/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/core/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

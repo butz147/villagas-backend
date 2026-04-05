@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Início{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Início</h1>
+    <p>Bem-vindo ao sistema da VillaGás.</p>
+</div>
+
+<div class="grid">
+    <a href="/venda/" class="card metric-card metric-yellow">
+        <div class="metric-icon">🛒</div>
+        <h3>Nova Venda</h3>
+        <p>Registrar venda rapidamente</p>
+    </a>
+
+    <a href="/pedidos/" class="card metric-card metric-cream">
+        <div class="metric-icon">📦</div>
+        <h3>Pedidos</h3>
+        <p>Acompanhar operação</p>
+    </a>
+
+    <a href="/clientes/" class="card metric-card metric-green">
+        <div class="metric-icon">👥</div>
+        <h3>Clientes</h3>
+        <p>Consultar cadastro</p>
+    </a>
+
+    <a href="/painel-entregador/" class="card metric-card metric-yellow">
+        <div class="metric-icon">🛵</div>
+        <h3>Entregas</h3>
+        <p>Painel rápido</p>
+    </a>
+</div>
+
+<div class="card">
+    <div class="section-title">Atalhos rápidos</div>
+
+    <div class="grid">
+        <a href="/venda/" class="btn btn-success">Abrir venda</a>
+        <a href="/pedidos/" class="btn btn-primary">Ver pedidos</a>
+        <a href="/clientes/" class="btn btn-secondary">Ver clientes</a>
+        <a href="/logout/" class="btn btn-warning">Sair</a>
+    </div>
+</div>
+{% endblock %}

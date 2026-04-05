@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Veículo{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Editar Veículo</h1>
+    <p>{{ veiculo.placa }} - {{ veiculo.modelo }}</p>
+</div>
+
+<div class="card">
+    <div class="section-title">Dados do veículo</div>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Placa</label>
+                <input type="text" name="placa" value="{{ veiculo.placa }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Modelo</label>
+                <input type="text" name="modelo" value="{{ veiculo.modelo }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Ano</label>
+                <input type="number" name="ano" value="{{ veiculo.ano|default:'' }}">
+            </div>
+
+            <div class="form-group">
+                <label>Cor</label>
+                <input type="text" name="cor" value="{{ veiculo.cor }}">
+            </div>
+
+            <div class="form-group">
+                <label>KM atual</label>
+                <input type="number" name="km_atual" value="{{ veiculo.km_atual }}">
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status">
+                    <option value="ativo" {% if veiculo.status == "ativo" %}selected{% endif %}>Ativo</option>
+                    <option value="manutencao" {% if veiculo.status == "manutencao" %}selected{% endif %}>Em manutenção</option>
+                    <option value="inativo" {% if veiculo.status == "inativo" %}selected{% endif %}>Inativo</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Motorista padrão</label>
+                <select name="motorista_padrao">
+                    <option value="">Nenhum</option>
+                    {% for e in entregadores %}
+                    <option value="{{ e.id }}" {% if veiculo.motorista_padrao_id == e.id %}selected{% endif %}>{{ e.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+            <label>Observações</label>
+            <textarea name="observacoes">{{ veiculo.observacoes }}</textarea>
+        </div>
+
+        <div style="margin-top:16px; display:flex; gap:12px;">
+            <button type="submit" class="btn btn-success">Salvar alterações</button>
+            <a href="/veiculos/" class="btn btn-outline">Voltar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

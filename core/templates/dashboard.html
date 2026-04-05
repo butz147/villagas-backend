@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Dashboard</h1>
+    <p>Loja: {{ loja.nome }} | Período: {{ data_inicial|date:"d/m/Y" }} até {{ data_final|date:"d/m/Y" }}</p>
+</div>
+
+<div class="card">
+    <div class="section-title">Filtro de período</div>
+
+    <form method="GET">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Filtro rápido</label>
+                <select name="filtro">
+                    <option value="hoje" {% if filtro == "hoje" %}selected{% endif %}>Hoje</option>
+                    <option value="ontem" {% if filtro == "ontem" %}selected{% endif %}>Ontem</option>
+                    <option value="7dias" {% if filtro == "7dias" %}selected{% endif %}>Últimos 7 dias</option>
+                    <option value="30dias" {% if filtro == "30dias" %}selected{% endif %}>Últimos 30 dias</option>
+                    <option value="mes" {% if filtro == "mes" %}selected{% endif %}>Mês atual</option>
+                    <option value="personalizado" {% if filtro == "personalizado" %}selected{% endif %}>Personalizado</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Data inicial</label>
+                <input type="date" name="data_inicial">
+            </div>
+
+            <div class="form-group">
+                <label>Data final</label>
+                <input type="date" name="data_final">
+            </div>
+        </div>
+
+        <div style="margin-top: 16px;">
+            <button type="submit" class="btn btn-success">Aplicar filtro</button>
+        </div>
+    </form>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon"><i class="bi bi-currency-dollar"></i></div>
+        <h3>Faturamento</h3>
+        <div class="value">R$ {{ total }}</div>
+        <p>Período filtrado</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon"><i class="bi bi-receipt"></i></div>
+        <h3>Total de vendas</h3>
+        <div class="value">{{ total_vendas_hoje }}</div>
+        <p>Quantidade registrada</p>
+    </div>
+
+    <div class="card metric-card metric-green">
+        <div class="metric-icon"><i class="bi bi-trophy-fill"></i></div>
+        <h3>Produto mais vendido</h3>
+        <div class="value" style="font-size:24px;">{{ produto_mais_vendido }}</div>
+        <p>Quantidade: {{ qtd_produto_mais_vendido }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Faturamento por dia</div>
+    <canvas id="graficoLinha"></canvas>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Pagamentos do período</div>
+        <canvas id="graficoPagamentos"></canvas>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Estoque atual</div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Cheio</th>
+                        <th>Vazio</th>
+                        <th>Alerta mínimo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for produto in produtos %}
+                    <tr>
+                        <td>{{ produto.nome }}</td>
+                        <td>{{ produto.estoque_cheio }}</td>
+                        <td>{{ produto.estoque_vazio }}</td>
+                        <td>{{ produto.alerta_estoque_minimo }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Ranking de funcionários</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Funcionário</th>
+                    <th>Quantidade de vendas</th>
+                    <th>Valor total vendido</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for nome, dados in ranking_funcionarios %}
+                <tr>
+                    <td>{{ nome }}</td>
+                    <td>{{ dados.quantidade_vendas }}</td>
+                    <td>R$ {{ dados.valor_total }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">Nenhuma venda registrada no período.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Alertas de estoque baixo</div>
+
+    {% if estoque_baixo %}
+        {% for item in estoque_baixo %}
+            <div class="alert alert-error">
+                {{ item.nome }} está com estoque cheio baixo: {{ item.estoque_cheio }} | limite: {{ item.alerta_estoque_minimo }}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-success">
+            Nenhum alerta de estoque baixo no momento.
+        </div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+var ctxPagamentos = document.getElementById('graficoPagamentos').getContext('2d');
+
+new Chart(ctxPagamentos, {
+    type: 'pie',
+    data: {
+        labels: ['Dinheiro', 'PIX', 'Crédito', 'Débito'],
+        datasets: [{
+            data: [
+                {{ dinheiro|default:"0" }},
+                {{ pix|default:"0" }},
+                {{ credito|default:"0" }},
+                {{ debito|default:"0" }}
+            ]
+        }]
+    }
+});
+
+var ctxLinha = document.getElementById('graficoLinha').getContext('2d');
+
+new Chart(ctxLinha, {
+    type: 'line',
+    data: {
+        labels: [{% for label in labels_grafico %}"{{ label }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Faturamento',
+            data: [{% for valor in valores_grafico %}{{ valor }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            tension: 0.3
+        }]
+    }
+});
+</script>
+{% endblock %}

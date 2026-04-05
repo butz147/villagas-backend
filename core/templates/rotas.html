@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Rotas de Veículos</h1>
+</div>
+
+{% for msg in messages %}
+<div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+{% endfor %}
+
+<div class="metric-grid">
+    <div class="metric-card">
+        <div class="metric-value">{{ rotas|length }}</div>
+        <div class="metric-label">Rotas</div>
+    </div>
+</div>
+
+<div class="form-card" style="margin-bottom:20px;">
+    <h3>Filtros</h3>
+    <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+        <div>
+            <label>Data</label>
+            <input type="date" name="data" value="{{ filtro_data }}" class="form-input">
+        </div>
+        <div>
+            <label>Status</label>
+            <select name="status" class="form-input">
+                <option value="">Todos</option>
+                <option value="planejada" {% if filtro_status == "planejada" %}selected{% endif %}>Planejada</option>
+                <option value="em_andamento" {% if filtro_status == "em_andamento" %}selected{% endif %}>Em Andamento</option>
+                <option value="concluida" {% if filtro_status == "concluida" %}selected{% endif %}>Concluída</option>
+                <option value="cancelada" {% if filtro_status == "cancelada" %}selected{% endif %}>Cancelada</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="/rotas/" class="btn btn-secondary">Limpar</a>
+    </form>
+</div>
+
+<div class="form-card" style="margin-bottom:20px;">
+    <h3>Nova Rota</h3>
+    <form method="post" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="nova_rota">
+        <div>
+            <label>Veículo *</label>
+            <select name="veiculo" class="form-input" required>
+                <option value="">Selecione</option>
+                {% for v in veiculos %}
+                <option value="{{ v.id }}">{{ v.placa }} - {{ v.modelo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Entregador</label>
+            <select name="entregador" class="form-input">
+                <option value="">Selecione</option>
+                {% for e in entregadores %}
+                <option value="{{ e.id }}">{{ e.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Data *</label>
+            <input type="date" name="data_rota" class="form-input" required>
+        </div>
+        <div>
+            <label>Nome da Rota</label>
+            <input type="text" name="nome_rota" class="form-input" placeholder="Ex: Zona Norte">
+        </div>
+        <div>
+            <label>KM Inicial</label>
+            <input type="number" name="km_inicial" class="form-input" min="0">
+        </div>
+        <button type="submit" class="btn btn-primary">Criar Rota</button>
+    </form>
+</div>
+
+<div class="table-card">
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Nome</th>
+                <th>Veículo</th>
+                <th>Entregador</th>
+                <th>Status</th>
+                <th>KM Rodado</th>
+                <th>Entregas</th>
+                <th>Taxa Sucesso</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rota in rotas %}
+            <tr>
+                <td>{{ rota.data_rota|date:"d/m/Y" }}</td>
+                <td>{{ rota.nome_rota|default:"-" }}</td>
+                <td>{{ rota.veiculo.placa }}</td>
+                <td>{{ rota.entregador.nome|default:"-" }}</td>
+                <td>
+                    {% if rota.status == "planejada" %}<span class="badge badge-info">Planejada</span>
+                    {% elif rota.status == "em_andamento" %}<span class="badge badge-warning">Em Andamento</span>
+                    {% elif rota.status == "concluida" %}<span class="badge badge-success">Concluída</span>
+                    {% else %}<span class="badge badge-danger">Cancelada</span>{% endif %}
+                </td>
+                <td>{{ rota.km_rodado }} km</td>
+                <td>{{ rota.quantidade_entregas }}</td>
+                <td>{{ rota.taxa_sucesso }}%</td>
+                <td style="display:flex;gap:5px;flex-wrap:wrap;">
+                    <a href="/rotas/{{ rota.id }}/" class="btn btn-sm btn-primary">Detalhes</a>
+                    {% if rota.status == "planejada" %}
+                    <form method="post" style="display:inline;">{% csrf_token %}
+                        <input type="hidden" name="acao" value="iniciar_rota">
+                        <input type="hidden" name="rota_id" value="{{ rota.id }}">
+                        <button type="submit" class="btn btn-sm btn-success">Iniciar</button>
+                    </form>
+                    {% endif %}
+                    {% if rota.status == "em_andamento" %}
+                    <form method="post" style="display:inline;">{% csrf_token %}
+                        <input type="hidden" name="acao" value="concluir_rota">
+                        <input type="hidden" name="rota_id" value="{{ rota.id }}">
+                        <input type="number" name="km_final" placeholder="KM final" class="form-input" style="width:100px;display:inline;" min="0">
+                        <button type="submit" class="btn btn-sm btn-success">Concluir</button>
+                    </form>
+                    {% endif %}
+                    {% if rota.status == "planejada" or rota.status == "em_andamento" %}
+                    <form method="post" style="display:inline;">{% csrf_token %}
+                        <input type="hidden" name="acao" value="cancelar_rota">
+                        <input type="hidden" name="rota_id" value="{{ rota.id }}">
+                        <button type="submit" class="btn btn-sm btn-danger">Cancelar</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" style="text-align:center;">Nenhuma rota encontrada.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

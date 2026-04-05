@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Vale Gás{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Vale Gás</h1>
+    <p>Loja: {{ loja.nome }} | Controle de créditos pré-pagos dos clientes</p>
+</div>
+
+{% if erro %}
+<div class="alert alert-danger" style="margin-bottom:16px;">{{ erro }}</div>
+{% endif %}
+
+<div class="grid">
+    <div class="card metric-card metric-green">
+        <div class="metric-icon"><i class="bi bi-wallet2"></i></div>
+        <h3>Total em créditos</h3>
+        <div class="value">R$ {{ total_creditos|floatformat:2 }}</div>
+        <p>Saldo de todos os clientes</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon"><i class="bi bi-people"></i></div>
+        <h3>Clientes com saldo</h3>
+        <div class="value">{{ clientes_com_saldo|length }}</div>
+        <p>Clientes com vale ativo</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Novo lançamento</div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Cliente</label>
+                    <select name="cliente" required>
+                        <option value="">Selecione...</option>
+                        {% for c in clientes %}
+                        <option value="{{ c.id }}">{{ c.nome }} {% if c.telefone %}- {{ c.telefone }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select name="tipo" required>
+                        <option value="credito">Crédito (cliente pagou antecipado)</option>
+                        <option value="debito">Débito (cliente usou o vale)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="number" step="0.01" name="valor" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top:14px;">
+                <label>Descrição</label>
+                <textarea name="descricao" placeholder="Ex: Pagamento antecipado de 2 botijões"></textarea>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button type="submit" class="btn btn-success">Salvar</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Clientes com saldo</div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Telefone</th>
+                        <th>Saldo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in clientes_com_saldo %}
+                    <tr>
+                        <td>{{ item.cliente.nome }}</td>
+                        <td>{{ item.cliente.telefone|default:"-" }}</td>
+                        <td><strong>R$ {{ item.saldo|floatformat:2 }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">Nenhum cliente com saldo</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Movimentações recentes</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Descrição</th>
+                    <th>Registrado por</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in movimentacoes %}
+                <tr>
+                    <td>{{ m.data|date:"d/m/Y H:i" }}</td>
+                    <td>{{ m.cliente.nome }}</td>
+                    <td>
+                        {% if m.tipo == "credito" %}
+                            <span class="badge badge-success">Crédito</span>
+                        {% else %}
+                            <span class="badge badge-danger">Débito</span>
+                        {% endif %}
+                    </td>
+                    <td>R$ {{ m.valor|floatformat:2 }}</td>
+                    <td>{{ m.descricao|default:"-" }}</td>
+                    <td>{{ m.registrado_por.username|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">Nenhuma movimentação registrada</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

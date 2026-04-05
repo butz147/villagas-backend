@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes para Recompra{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Clientes para Recompra</h1>
+    <p>Identifique clientes com chance de nova compra e faça o acompanhamento comercial.</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon">🔁</div>
+        <h3>Clientes listados</h3>
+        <div class="value">{{ clientes|length }}</div>
+        <p>Oportunidades de recompra</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon">📞</div>
+        <h3>Ação comercial</h3>
+        <div class="value" style="font-size:22px;">Acompanhar</div>
+        <p>Contato e reativação</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Lista de clientes para recompra</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Telefone</th>
+                    <th>Última compra</th>
+                    <th>Dias sem comprar</th>
+                    <th>Observação comercial</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in clientes %}
+                <tr>
+                    <td>{{ item.cliente.nome }}</td>
+                    <td>{{ item.cliente.telefone|default:"-" }}</td>
+                    <td>
+                        {% if item.ultima_compra %}
+                            {{ item.ultima_compra|date:"d/m/Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ item.dias_sem_comprar }}</td>
+                    <td>{{ item.cliente.observacao_comercial|default:"-" }}</td>
+                    <td>
+                        {% if item.dias_sem_comprar >= 45 %}
+                            <span class="badge badge-danger">Urgente</span>
+                        {% elif item.dias_sem_comprar >= 30 %}
+                            <span class="badge badge-low">Atenção</span>
+                        {% else %}
+                            <span class="badge badge-info">Monitorar</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">Nenhum cliente encontrado para recompra.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Movimentação de Estoque{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Movimentação de Estoque</h1>
+    <p>Loja: {{ loja.nome }} | Controle manual de entradas, saídas e ajustes</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon">📦</div>
+        <h3>Total de produtos</h3>
+        <div class="value">{{ produtos|length }}</div>
+        <p>Disponíveis para movimentação</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon">📝</div>
+        <h3>Movimentações</h3>
+        <div class="value">{{ movimentacoes|length }}</div>
+        <p>Últimos lançamentos exibidos</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Nova movimentação</div>
+
+        {% if erro %}
+            <div class="alert alert-error">
+                {{ erro }}
+            </div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Produto</label>
+                    <select name="produto" required>
+                        {% for produto in produtos %}
+                        <option value="{{ produto.id }}">
+                            {{ produto.nome }} | cheio: {{ produto.estoque_cheio }} | vazio: {{ produto.estoque_vazio }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select name="tipo" required>
+                        <option value="entrada">Entrada</option>
+                        <option value="saida">Saída</option>
+                        <option value="ajuste_cheio">Ajuste estoque cheio</option>
+                        <option value="ajuste_vazio">Ajuste estoque vazio</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" name="quantidade" min="1" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top:14px;">
+                <label>Motivo</label>
+                <textarea name="motivo"></textarea>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button type="submit" class="btn btn-success">Salvar movimentação</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Visão rápida</div>
+
+        <div class="alert alert-success">
+            Entrada aumenta o estoque cheio.
+        </div>
+
+        <div class="alert alert-success">
+            Saída reduz o estoque cheio.
+        </div>
+
+        <div class="alert alert-success">
+            Ajuste de cheio corrige apenas o estoque cheio.
+        </div>
+
+        <div class="alert alert-success">
+            Ajuste de vazio corrige apenas o estoque vazio.
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Últimas movimentações</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Produto</th>
+                    <th>Tipo</th>
+                    <th>Quantidade</th>
+                    <th>Motivo</th>
+                    <th>Usuário</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for mov in movimentacoes %}
+                <tr>
+                    <td>{{ mov.data_movimentacao|date:"d/m/Y H:i" }}</td>
+                    <td>{{ mov.produto.nome }}</td>
+                    <td>
+                        {% if mov.tipo == "entrada" %}
+                            <span class="badge badge-ok">{{ mov.get_tipo_display }}</span>
+                        {% elif mov.tipo == "saida" %}
+                            <span class="badge badge-danger">{{ mov.get_tipo_display }}</span>
+                        {% else %}
+                            <span class="badge badge-info">{{ mov.get_tipo_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ mov.quantidade }}</td>
+                    <td>{{ mov.motivo|default:"-" }}</td>
+                    <td>{{ mov.usuario.username }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">Nenhuma movimentação encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

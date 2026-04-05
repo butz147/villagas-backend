@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Fechamentos{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Histórico de Fechamentos</h1>
+    <p>Loja: {{ loja.nome }} | Consulte os fechamentos já salvos.</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon">📅</div>
+        <h3>Total de fechamentos</h3>
+        <div class="value">{{ fechamentos|length }}</div>
+        <p>Registros encontrados</p>
+    </div>
+
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon">🧾</div>
+        <h3>Último fechamento</h3>
+        <div class="value" style="font-size:24px;">
+            {% if fechamentos %}
+                {{ fechamentos.0.data|date:"d/m/Y" }}
+            {% else %}
+                -
+            {% endif %}
+        </div>
+        <p>Data mais recente</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Lista de fechamentos</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Vendas</th>
+                    <th>Pedidos</th>
+                    <th>Despesas</th>
+                    <th>Retiradas</th>
+                    <th>Total geral</th>
+                    <th>Criado por</th>
+                    <th>Criado em</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in fechamentos %}
+                <tr>
+                    <td>{{ f.data|date:"d/m/Y" }}</td>
+                    <td>R$ {{ f.total_vendas }}</td>
+                    <td>R$ {{ f.total_pedidos }}</td>
+                    <td>R$ {{ f.total_despesas }}</td>
+                    <td>R$ {{ f.total_retiradas }}</td>
+                    <td>
+                        {% if f.total_geral < 0 %}
+                            <span class="badge badge-danger">R$ {{ f.total_geral }}</span>
+                        {% else %}
+                            <span class="badge badge-ok">R$ {{ f.total_geral }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if f.criado_por %}
+                            {{ f.criado_por.username }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ f.criado_em|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                            <a href="/historico-fechamentos/{{ f.id }}/reabrir/" class="btn btn-warning">Reabrir</a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">Nenhum fechamento salvo.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Veículos{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Controle de Veículos</h1>
+    <p>Loja: {{ loja.nome }} | Frota, abastecimentos e manutenções</p>
+</div>
+
+{% if erro %}
+<div class="alert alert-danger" style="margin-bottom:16px;">{{ erro }}</div>
+{% endif %}
+
+{% if alertas_manutencao %}
+<div class="alert alert-danger" style="margin-bottom:16px;">
+    <strong>Alertas de manutenção:</strong>
+    <ul style="margin:8px 0 0 16px;">
+        {% for alerta in alertas_manutencao %}
+        <li>
+            {{ alerta.veiculo.placa }} - {{ alerta.tipo }}
+            {% if alerta.km_previsto %}(km previsto: {{ alerta.km_previsto }}){% endif %}
+            {% if alerta.data_prevista %}(data prevista: {{ alerta.data_prevista|date:"d/m/Y" }}){% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="grid">
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon"><i class="bi bi-truck"></i></div>
+        <h3>Veículos</h3>
+        <div class="value">{{ veiculos|length }}</div>
+        <p>Cadastrados na frota</p>
+    </div>
+
+    <div class="card metric-card metric-red">
+        <div class="metric-icon"><i class="bi bi-fuel-pump"></i></div>
+        <h3>Combustível (mês)</h3>
+        <div class="value">R$ {{ total_combustivel_mes|floatformat:2 }}</div>
+        <p>Gasto com abastecimentos</p>
+    </div>
+
+    <div class="card metric-card metric-green">
+        <div class="metric-icon"><i class="bi bi-wrench"></i></div>
+        <h3>Manutenção (mês)</h3>
+        <div class="value">R$ {{ total_manutencao_mes|floatformat:2 }}</div>
+        <p>Gasto com manutenções</p>
+    </div>
+</div>
+
+<!-- Cadastrar veículo -->
+<div class="card">
+    <div class="section-title">Cadastrar novo veículo</div>
+
+    <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="novo_veiculo">
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Placa</label>
+                <input type="text" name="placa" placeholder="ABC-1234" required>
+            </div>
+
+            <div class="form-group">
+                <label>Modelo</label>
+                <input type="text" name="modelo" placeholder="Ex: Fiat Fiorino" required>
+            </div>
+
+            <div class="form-group">
+                <label>Ano</label>
+                <input type="number" name="ano" placeholder="2020">
+            </div>
+
+            <div class="form-group">
+                <label>Cor</label>
+                <input type="text" name="cor" placeholder="Branco">
+            </div>
+
+            <div class="form-group">
+                <label>KM atual</label>
+                <input type="number" name="km_atual" value="0">
+            </div>
+
+            <div class="form-group">
+                <label>Motorista padrão</label>
+                <select name="motorista_padrao">
+                    <option value="">Nenhum</option>
+                    {% for e in entregadores %}
+                    <option value="{{ e.id }}">{{ e.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+            <label>Observações</label>
+            <textarea name="observacoes"></textarea>
+        </div>
+
+        <div style="margin-top:16px;">
+            <button type="submit" class="btn btn-success">Cadastrar veículo</button>
+        </div>
+    </form>
+</div>
+
+<!-- Lista de veículos -->
+<div class="card">
+    <div class="section-title">Frota</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Placa</th>
+                    <th>Modelo</th>
+                    <th>Ano</th>
+                    <th>Cor</th>
+                    <th>KM atual</th>
+                    <th>Motorista</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in veiculos %}
+                <tr>
+                    <td><strong>{{ v.placa }}</strong></td>
+                    <td>{{ v.modelo }}</td>
+                    <td>{{ v.ano|default:"-" }}</td>
+                    <td>{{ v.cor|default:"-" }}</td>
+                    <td>{{ v.km_atual }} km</td>
+                    <td>{{ v.motorista_padrao.nome|default:"-" }}</td>
+                    <td>
+                        {% if v.status == "ativo" %}
+                            <span class="badge badge-success">Ativo</span>
+                        {% elif v.status == "manutencao" %}
+                            <span class="badge badge-warning">Manutenção</span>
+                        {% else %}
+                            <span class="badge badge-danger">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/veiculos/{{ v.id }}/editar/" class="btn btn-sm btn-outline">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">Nenhum veículo cadastrado</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Abastecimento -->
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Registrar abastecimento</div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="abastecimento">
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Veículo</label>
+                    <select name="veiculo" required>
+                        <option value="">Selecione...</option>
+                        {% for v in veiculos %}
+                        <option value="{{ v.id }}">{{ v.placa }} - {{ v.modelo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>KM no abastecimento</label>
+                    <input type="number" name="km_abastecimento" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Litros</label>
+                    <input type="number" step="0.01" name="litros" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Valor total (R$)</label>
+                    <input type="number" step="0.01" name="valor_total" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Combustível</label>
+                    <select name="tipo_combustivel">
+                        <option value="gasolina">Gasolina</option>
+                        <option value="etanol">Etanol</option>
+                        <option value="diesel">Diesel</option>
+                        <option value="gnv">GNV</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button type="submit" class="btn btn-success">Registrar abastecimento</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Manutenção -->
+    <div class="card">
+        <div class="section-title">Registrar manutenção</div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="manutencao">
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Veículo</label>
+                    <select name="veiculo" required>
+                        <option value="">Selecione...</option>
+                        {% for v in veiculos %}
+                        <option value="{{ v.id }}">{{ v.placa }} - {{ v.modelo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select name="tipo_manutencao" required>
+                        <option value="preventiva">Preventiva</option>
+                        <option value="corretiva">Corretiva</option>
+                        <option value="troca_oleo">Troca de óleo</option>
+                        <option value="pneu">Pneu</option>
+                        <option value="revisao">Revisão</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="number" step="0.01" name="valor_manutencao" required>
+                </div>
+
+                <div class="form-group">
+                    <label>KM atual</label>
+                    <input type="number" name="km_manutencao">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top:14px;">
+                <label>Descrição</label>
+                <textarea name="descricao_manutencao" required placeholder="Descreva o serviço realizado"></textarea>
+            </div>
+
+            <div class="form-grid" style="margin-top:14px;">
+                <div class="form-group">
+                    <label>Próxima manutenção (KM)</label>
+                    <input type="number" name="proxima_manutencao_km" placeholder="Ex: 50000">
+                </div>
+
+                <div class="form-group">
+                    <label>Próxima manutenção (data)</label>
+                    <input type="date" name="proxima_manutencao_data">
+                </div>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button type="submit" class="btn btn-success">Registrar manutenção</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Histórico abastecimentos -->
+<div class="card">
+    <div class="section-title">Últimos abastecimentos</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Veículo</th>
+                    <th>KM</th>
+                    <th>Litros</th>
+                    <th>Valor</th>
+                    <th>Combustível</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in abastecimentos %}
+                <tr>
+                    <td>{{ a.data|date:"d/m/Y H:i" }}</td>
+                    <td>{{ a.veiculo.placa }}</td>
+                    <td>{{ a.km_abastecimento }} km</td>
+                    <td>{{ a.litros }}L</td>
+                    <td>R$ {{ a.valor_total|floatformat:2 }}</td>
+                    <td>{{ a.tipo_combustivel }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">Nenhum abastecimento registrado</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Histórico manutenções -->
+<div class="card">
+    <div class="section-title">Últimas manutenções</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Veículo</th>
+                    <th>Tipo</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Próx. KM</th>
+                    <th>Próx. Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in manutencoes %}
+                <tr>
+                    <td>{{ m.data|date:"d/m/Y" }}</td>
+                    <td>{{ m.veiculo.placa }}</td>
+                    <td>{{ m.get_tipo_display }}</td>
+                    <td>{{ m.descricao|truncatechars:40 }}</td>
+                    <td>R$ {{ m.valor|floatformat:2 }}</td>
+                    <td>{{ m.proxima_manutencao_km|default:"-" }}</td>
+                    <td>{{ m.proxima_manutencao_data|date:"d/m/Y"|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">Nenhuma manutenção registrada</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Fechamento de Caixa{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Fechamento de Caixa</h1>
+    <p>Loja: {{ loja.nome }} | Data: {{ data|date:"d/m/Y" }}</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon">💰</div>
+        <h3>Total de vendas</h3>
+        <div class="value">R$ {{ total_vendas }}</div>
+        <p>Quantidade: {{ quantidade_vendas }}</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon">📦</div>
+        <h3>Total de pedidos</h3>
+        <div class="value">R$ {{ total_pedidos }}</div>
+        <p>Quantidade: {{ quantidade_pedidos }}</p>
+    </div>
+
+    <div class="card metric-card metric-green">
+        <div class="metric-icon">📈</div>
+        <h3>Total geral</h3>
+        <div class="value">R$ {{ total_geral }}</div>
+        <p>Resultado bruto do dia</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Pagamentos — Vendas</div>
+
+        <div class="table-wrap">
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Dinheiro</th>
+                        <td>R$ {{ dinheiro_vendas }}</td>
+                    </tr>
+                    <tr>
+                        <th>PIX</th>
+                        <td>R$ {{ pix_vendas }}</td>
+                    </tr>
+                    <tr>
+                        <th>Crédito</th>
+                        <td>R$ {{ credito_vendas }}</td>
+                    </tr>
+                    <tr>
+                        <th>Débito</th>
+                        <td>R$ {{ debito_vendas }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Pagamentos — Pedidos</div>
+
+        <div class="table-wrap">
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Dinheiro</th>
+                        <td>R$ {{ dinheiro_pedidos }}</td>
+                    </tr>
+                    <tr>
+                        <th>PIX</th>
+                        <td>R$ {{ pix_pedidos }}</td>
+                    </tr>
+                    <tr>
+                        <th>Crédito</th>
+                        <td>R$ {{ credito_pedidos }}</td>
+                    </tr>
+                    <tr>
+                        <th>Débito</th>
+                        <td>R$ {{ debito_pedidos }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Ações do fechamento</div>
+
+    <div class="form-grid">
+        <form method="POST" action="/fechamento-caixa/salvar/">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Salvar fechamento do dia</button>
+        </form>
+
+        <a href="/fechamento-caixa/pdf/" target="_blank" class="btn btn-primary">Exportar PDF</a>
+        <a href="/fechamento-caixa/excel/" class="btn btn-secondary">Exportar Excel</a>
+        <a href="/historico-fechamentos/" class="btn btn-warning">Ver histórico</a>
+    </div>
+</div>
+{% endblock %}

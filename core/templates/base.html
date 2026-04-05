@@ -1,0 +1,370 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VillaGás{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="manifest" href="{% static 'core/pwa/manifest.json' %}">
+    <meta name="theme-color" content="#0d1d56">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="VillaGás">
+    <link rel="apple-touch-icon" href="{% static 'core/icons/icon-192.png' %}">
+</head>
+<body>
+
+<!-- MOBILE TOPBAR -->
+<div class="mobile-topbar">
+    <button class="hamburger-btn" onclick="toggleMobileMenu()">
+        <i class="bi bi-list"></i>
+    </button>
+    <div class="mobile-logo-wrap">
+        <img src="{% static 'core/img/logo-villagas.png' %}" alt="VillaGás">
+    </div>
+    <a href="/notificacoes/" class="mobile-notif-btn">
+        <i class="bi bi-bell-fill"></i>
+        <span class="notif-dot" id="mobile-notif-dot" style="display:none;"></span>
+    </a>
+</div>
+
+<!-- MOBILE SLIDE MENU -->
+<div class="mobile-slide-overlay" id="mobileOverlay" onclick="toggleMobileMenu()" style="display:none;"></div>
+<div class="mobile-slide-menu" id="mobileSlideMenu" style="display:none;">
+    <div class="mobile-slide-header">
+        <img src="{% static 'core/img/logo-villagas.png' %}" alt="VillaGás" style="max-width:140px;">
+        <button class="mobile-slide-close" onclick="toggleMobileMenu()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="mobile-slide-user">
+        <div class="mobile-user-avatar">
+            <i class="bi bi-person-fill"></i>
+        </div>
+        <div>
+            <div style="font-weight:700;">{{ request.user.username }}</div>
+            {% if request.user.is_authenticated %}
+            <small style="opacity:0.7;">
+                {% if request.user.perfilusuario.tipo_usuario == "admin" %}Administrador
+                {% elif request.user.perfilusuario.tipo_usuario == "gerente" %}Gerente
+                {% else %}Funcionário{% endif %}
+            </small>
+            {% endif %}
+        </div>
+    </div>
+    <nav class="mobile-slide-nav">
+        <div class="mobile-nav-section">
+            <div class="mobile-nav-title"><i class="bi bi-lightning-charge-fill"></i> Operação</div>
+            <a href="/venda/" class="{% if request.path == '/venda/' %}active{% endif %}"><i class="bi bi-cart3"></i> Venda</a>
+            <a href="/pedidos/" class="{% if request.path == '/pedidos/' %}active{% endif %}"><i class="bi bi-box-seam"></i> Pedidos</a>
+            <a href="/clientes/" class="{% if request.path == '/clientes/' %}active{% endif %}"><i class="bi bi-people"></i> Clientes</a>
+            <a href="/painel-entregador/" class="{% if request.path == '/painel-entregador/' %}active{% endif %}"><i class="bi bi-truck"></i> Entregas</a>
+        </div>
+        {% if request.user.is_authenticated and request.user.perfilusuario.tipo_usuario == "gerente" or request.user.perfilusuario.tipo_usuario == "admin" %}
+        <div class="mobile-nav-section">
+            <div class="mobile-nav-title"><i class="bi bi-box-fill"></i> Estoque</div>
+            <a href="/estoque-admin/"><i class="bi bi-boxes"></i> Estoque Admin</a>
+            <a href="/movimentacao-estoque/"><i class="bi bi-arrow-left-right"></i> Movimentação</a>
+            <a href="/compras-estoque/"><i class="bi bi-bag-check"></i> Compras</a>
+            <a href="/inventario-estoque/"><i class="bi bi-clipboard-check"></i> Inventário</a>
+        </div>
+        <div class="mobile-nav-section">
+            <div class="mobile-nav-title"><i class="bi bi-currency-dollar"></i> Financeiro</div>
+            <a href="/dashboard/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a href="/fechamento-caixa/"><i class="bi bi-cash-stack"></i> Fechamento</a>
+            <a href="/despesas/"><i class="bi bi-receipt-cutoff"></i> Despesas</a>
+            <a href="/vale-gas/"><i class="bi bi-ticket-perforated"></i> Vale Gás</a>
+            <a href="/vendas-antecipadas/"><i class="bi bi-calendar-check"></i> Vendas Antecip.</a>
+            <a href="/comodatos/"><i class="bi bi-arrow-repeat"></i> Comodatos</a>
+        </div>
+        <div class="mobile-nav-section">
+            <div class="mobile-nav-title"><i class="bi bi-truck-front-fill"></i> Frota</div>
+            <a href="/veiculos/"><i class="bi bi-car-front"></i> Veículos</a>
+            <a href="/rotas/"><i class="bi bi-map"></i> Rotas</a>
+            <a href="/checklist-veiculo/"><i class="bi bi-list-check"></i> Checklist</a>
+            <a href="/alertas-manutencao/"><i class="bi bi-exclamation-triangle"></i> Alertas</a>
+        </div>
+        {% endif %}
+        {% if request.user.is_authenticated and request.user.perfilusuario.tipo_usuario == "admin" %}
+        <div class="mobile-nav-section">
+            <div class="mobile-nav-title"><i class="bi bi-gear-fill"></i> Gestão</div>
+            <a href="/admin-geral/"><i class="bi bi-shield-lock"></i> Admin Geral</a>
+            <a href="/dre-mensal/"><i class="bi bi-file-earmark-bar-graph"></i> DRE Mensal</a>
+            <a href="/metas/"><i class="bi bi-bullseye"></i> Metas</a>
+            <a href="/metricas-entregadores/"><i class="bi bi-bar-chart-line"></i> Métricas</a>
+            <a href="/comissoes/"><i class="bi bi-percent"></i> Comissões</a>
+            <a href="/fornecedores/"><i class="bi bi-building"></i> Fornecedores</a>
+        </div>
+        {% endif %}
+        <a href="/logout/" class="mobile-slide-logout"><i class="bi bi-box-arrow-right"></i> Sair do Sistema</a>
+    </nav>
+</div>
+
+<!-- LAYOUT DESKTOP -->
+<div class="layout">
+    <aside class="sidebar" id="sidebar">
+        <div class="logo-box">
+            <img src="{% static 'core/img/logo-villagas.png' %}" alt="VillaGás">
+        </div>
+
+        <div class="user-box">
+            <div class="user-avatar">
+                <i class="bi bi-person-fill"></i>
+            </div>
+            <div class="user-info">
+                <div class="user-name">{{ request.user.username }}</div>
+                {% if request.user.is_authenticated %}
+                    <div class="user-role">
+                        {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                            <span class="role-badge role-admin"><i class="bi bi-shield-lock-fill"></i> Administrador</span>
+                        {% elif request.user.perfilusuario.tipo_usuario == "gerente" %}
+                            <span class="role-badge role-gerente"><i class="bi bi-star-fill"></i> Gerente</span>
+                        {% else %}
+                            <span class="role-badge role-func"><i class="bi bi-person-badge-fill"></i> Funcionário</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <div class="nav-group">
+                <div class="nav-group-title"><i class="bi bi-lightning-charge-fill"></i> Operação</div>
+                <a class="{% if request.path == '/venda/' %}active{% endif %}" href="/venda/">
+                    <i class="bi bi-cart3"></i> <span>Venda</span>
+                </a>
+                <a class="{% if request.path == '/pedidos/' %}active{% endif %}" href="/pedidos/">
+                    <i class="bi bi-box-seam"></i> <span>Pedidos</span>
+                </a>
+                <a class="{% if request.path == '/clientes/' %}active{% endif %}" href="/clientes/">
+                    <i class="bi bi-people"></i> <span>Clientes</span>
+                </a>
+                <a class="{% if request.path == '/painel-entregador/' %}active{% endif %}" href="/painel-entregador/">
+                    <i class="bi bi-truck"></i> <span>Entregas</span>
+                </a>
+            </div>
+
+            {% if request.user.is_authenticated and request.user.perfilusuario.tipo_usuario == "gerente" or request.user.perfilusuario.tipo_usuario == "admin" %}
+            <div class="nav-group">
+                <div class="nav-group-title"><i class="bi bi-box-fill"></i> Estoque</div>
+                <a class="{% if request.path == '/estoque-admin/' %}active{% endif %}" href="/estoque-admin/">
+                    <i class="bi bi-boxes"></i> <span>Estoque Admin</span>
+                </a>
+                <a class="{% if request.path == '/movimentacao-estoque/' %}active{% endif %}" href="/movimentacao-estoque/">
+                    <i class="bi bi-arrow-left-right"></i> <span>Movimentação</span>
+                </a>
+                <a class="{% if request.path == '/compras-estoque/' %}active{% endif %}" href="/compras-estoque/">
+                    <i class="bi bi-bag-check"></i> <span>Compras</span>
+                </a>
+                <a class="{% if request.path == '/inventario-estoque/' %}active{% endif %}" href="/inventario-estoque/">
+                    <i class="bi bi-clipboard-check"></i> <span>Inventário</span>
+                </a>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title"><i class="bi bi-currency-dollar"></i> Financeiro</div>
+                <a class="{% if request.path == '/dashboard/' %}active{% endif %}" href="/dashboard/">
+                    <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
+                </a>
+                <a class="{% if request.path == '/fechamento-caixa/' %}active{% endif %}" href="/fechamento-caixa/">
+                    <i class="bi bi-cash-stack"></i> <span>Fechamento</span>
+                </a>
+                <a class="{% if request.path == '/historico-fechamentos/' %}active{% endif %}" href="/historico-fechamentos/">
+                    <i class="bi bi-clock-history"></i> <span>Histórico</span>
+                </a>
+                <a class="{% if request.path == '/despesas/' %}active{% endif %}" href="/despesas/">
+                    <i class="bi bi-receipt-cutoff"></i> <span>Despesas</span>
+                </a>
+                <a class="{% if request.path == '/retiradas-funcionarios/' %}active{% endif %}" href="/retiradas-funcionarios/">
+                    <i class="bi bi-wallet2"></i> <span>Retiradas</span>
+                </a>
+                <a class="{% if request.path == '/vale-gas/' %}active{% endif %}" href="/vale-gas/">
+                    <i class="bi bi-ticket-perforated"></i> <span>Vale Gás</span>
+                </a>
+                <a class="{% if request.path == '/vendas-antecipadas/' %}active{% endif %}" href="/vendas-antecipadas/">
+                    <i class="bi bi-calendar-check"></i> <span>Vendas Antecipadas</span>
+                </a>
+                <a class="{% if request.path == '/comodatos/' %}active{% endif %}" href="/comodatos/">
+                    <i class="bi bi-arrow-repeat"></i> <span>Comodatos</span>
+                </a>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-title"><i class="bi bi-truck-front-fill"></i> Frota</div>
+                <a class="{% if request.path == '/veiculos/' %}active{% endif %}" href="/veiculos/">
+                    <i class="bi bi-car-front"></i> <span>Veículos</span>
+                </a>
+                <a class="{% if request.path == '/rotas/' %}active{% endif %}" href="/rotas/">
+                    <i class="bi bi-map"></i> <span>Rotas</span>
+                </a>
+                <a class="{% if request.path == '/checklist-veiculo/' %}active{% endif %}" href="/checklist-veiculo/">
+                    <i class="bi bi-list-check"></i> <span>Checklist</span>
+                </a>
+                <a class="{% if request.path == '/alertas-manutencao/' %}active{% endif %}" href="/alertas-manutencao/">
+                    <i class="bi bi-exclamation-triangle"></i> <span>Alertas Manutenção</span>
+                </a>
+            </div>
+            {% endif %}
+
+            {% if request.user.is_authenticated and request.user.perfilusuario.tipo_usuario == "admin" %}
+            <div class="nav-group">
+                <div class="nav-group-title"><i class="bi bi-gear-fill"></i> Gestão</div>
+                <a class="{% if request.path == '/admin-geral/' %}active{% endif %}" href="/admin-geral/">
+                    <i class="bi bi-shield-lock"></i> <span>Admin Geral</span>
+                </a>
+                <a class="{% if request.path == '/dre-mensal/' %}active{% endif %}" href="/dre-mensal/">
+                    <i class="bi bi-file-earmark-bar-graph"></i> <span>DRE Mensal</span>
+                </a>
+                <a class="{% if request.path == '/comparativo-mensal/' %}active{% endif %}" href="/comparativo-mensal/">
+                    <i class="bi bi-graph-up-arrow"></i> <span>Comparativo</span>
+                </a>
+                <a class="{% if request.path == '/saldo-caixa/' %}active{% endif %}" href="/saldo-caixa/">
+                    <i class="bi bi-safe"></i> <span>Saldo Caixa</span>
+                </a>
+                <a class="{% if request.path == '/contas-pagar/' %}active{% endif %}" href="/contas-pagar/">
+                    <i class="bi bi-credit-card-2-back"></i> <span>Contas a Pagar</span>
+                </a>
+                <a class="{% if request.path == '/contas-receber/' %}active{% endif %}" href="/contas-receber/">
+                    <i class="bi bi-cash-coin"></i> <span>Contas a Receber</span>
+                </a>
+                <a class="{% if request.path == '/lucro-diario/' %}active{% endif %}" href="/lucro-diario/">
+                    <i class="bi bi-graph-up"></i> <span>Lucro Diário</span>
+                </a>
+                <a class="{% if request.path == '/auditoria-sistema/' %}active{% endif %}" href="/auditoria-sistema/">
+                    <i class="bi bi-eye"></i> <span>Auditoria</span>
+                </a>
+                <a class="{% if request.path == '/fornecedores/' %}active{% endif %}" href="/fornecedores/">
+                    <i class="bi bi-building"></i> <span>Fornecedores</span>
+                </a>
+                <a class="{% if request.path == '/comissoes/' %}active{% endif %}" href="/comissoes/">
+                    <i class="bi bi-percent"></i> <span>Comissões</span>
+                </a>
+                <a class="{% if request.path == '/metas/' %}active{% endif %}" href="/metas/">
+                    <i class="bi bi-bullseye"></i> <span>Metas</span>
+                </a>
+                <a class="{% if request.path == '/metricas-entregadores/' %}active{% endif %}" href="/metricas-entregadores/">
+                    <i class="bi bi-bar-chart-line"></i> <span>Métricas Entregadores</span>
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="nav-group" style="margin-top:8px;">
+                <a class="{% if request.path == '/notificacoes/' %}active{% endif %}" href="/notificacoes/" style="position:relative;">
+                    <i class="bi bi-bell"></i> <span>Notificações</span>
+                    <span class="sidebar-notif-badge" id="sidebar-notif-badge" style="display:none;"></span>
+                </a>
+            </div>
+
+            <a class="logout-btn" href="/logout/">
+                <i class="bi bi-box-arrow-right"></i> Sair do Sistema
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<div class="mobile-bottom-nav">
+    <a href="/" class="{% if request.path == '/' %}active{% endif %}">
+        <span><i class="bi bi-house-door-fill bottom-icon"></i></span>
+        <small>Início</small>
+    </a>
+    <a href="/venda/" class="{% if request.path == '/venda/' %}active{% endif %}">
+        <span><i class="bi bi-cart-fill bottom-icon"></i></span>
+        <small>Venda</small>
+    </a>
+    <a href="/pedidos/" class="{% if request.path == '/pedidos/' %}active{% endif %}">
+        <span><i class="bi bi-box-seam-fill bottom-icon"></i></span>
+        <small>Pedidos</small>
+    </a>
+    <a href="/clientes/" class="{% if request.path == '/clientes/' %}active{% endif %}">
+        <span><i class="bi bi-people-fill bottom-icon"></i></span>
+        <small>Clientes</small>
+    </a>
+    <a href="/notificacoes/" class="{% if request.path == '/notificacoes/' %}active{% endif %}" style="position:relative;">
+        <span><i class="bi bi-bell-fill bottom-icon"></i></span>
+        <small>Alertas</small>
+        <span class="bottom-notif-dot" id="bottom-notif-dot" style="display:none;"></span>
+    </a>
+</div>
+
+<script>
+    // PWA Service Worker
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+            navigator.serviceWorker.register("{% static 'core/pwa/service-worker.js' %}")
+                .then(function (registration) {
+                    console.log("SW registrado:", registration.scope);
+                })
+                .catch(function (error) {
+                    console.log("Erro SW:", error);
+                });
+        });
+    }
+
+    // Mobile slide menu
+    function toggleMobileMenu() {
+        var menu = document.getElementById('mobileSlideMenu');
+        var overlay = document.getElementById('mobileOverlay');
+        var isOpen = menu.classList.contains('open');
+        if (isOpen) {
+            menu.classList.remove('open');
+            overlay.classList.remove('open');
+            document.body.classList.remove('menu-open');
+            setTimeout(function(){
+                menu.style.display = 'none';
+                overlay.style.display = 'none';
+            }, 300);
+        } else {
+            menu.style.display = 'block';
+            overlay.style.display = 'block';
+            // Force reflow before adding class for transition
+            menu.offsetHeight;
+            menu.classList.add('open');
+            overlay.classList.add('open');
+            document.body.classList.add('menu-open');
+        }
+    }
+
+    // Notification badge checker
+    function checkNotifications() {
+        fetch('/api/notificacoes/')
+            .then(r => r.json())
+            .then(data => {
+                var count = data.nao_lidas || 0;
+                var badges = ['sidebar-notif-badge', 'mobile-notif-dot', 'bottom-notif-dot'];
+                badges.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        if (count > 0) {
+                            el.style.display = 'flex';
+                            el.textContent = count > 9 ? '9+' : count;
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    }
+                });
+            })
+            .catch(function(){});
+    }
+    checkNotifications();
+    setInterval(checkNotifications, 30000);
+
+    // Sidebar scroll memory
+    (function(){
+        var sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            var saved = sessionStorage.getItem('sidebarScroll');
+            if (saved) sidebar.scrollTop = parseInt(saved);
+            sidebar.addEventListener('scroll', function(){
+                sessionStorage.setItem('sidebarScroll', sidebar.scrollTop);
+            });
+        }
+    })();
+</script>
+</body>
+</html>

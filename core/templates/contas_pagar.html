@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Contas a Pagar{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Contas a Pagar</h1>
+    <p>Loja: {{ loja.nome }} | Controle financeiro de vencimentos</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-red">
+        <div class="metric-icon">📌</div>
+        <h3>Total pendente</h3>
+        <div class="value">R$ {{ total_pendente }}</div>
+        <p>Contas em aberto</p>
+    </div>
+
+    <div class="card metric-card metric-green">
+        <div class="metric-icon">✅</div>
+        <h3>Total pago</h3>
+        <div class="value positive">R$ {{ total_pago }}</div>
+        <p>Contas já quitadas</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Nova conta</div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" name="descricao" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select name="categoria">
+                        <option value="aluguel">Aluguel</option>
+                        <option value="energia">Energia</option>
+                        <option value="agua">Água</option>
+                        <option value="internet">Internet</option>
+                        <option value="fornecedor">Fornecedor</option>
+                        <option value="manutencao">Manutenção</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Valor</label>
+                    <input type="number" step="0.01" name="valor" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Vencimento</label>
+                    <input type="date" name="vencimento" required>
+                </div>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button type="submit" class="btn btn-success">Salvar conta</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Visão rápida</div>
+
+        <div class="alert alert-success">
+            Use esta tela para registrar despesas futuras e contas fixas.
+        </div>
+
+        <div class="alert alert-success">
+            O pagamento não precisa ser lançado no dia do cadastro.
+        </div>
+
+        <div class="alert alert-success">
+            Quando a conta for quitada, marque como paga na tabela abaixo.
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Lista de contas</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                    <th>Status</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conta in contas %}
+                <tr>
+                    <td>{{ conta.descricao }}</td>
+                    <td>{{ conta.get_categoria_display }}</td>
+                    <td>R$ {{ conta.valor }}</td>
+                    <td>{{ conta.vencimento|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if conta.status == "pendente" %}
+                            <span class="badge badge-danger">Pendente</span>
+                        {% else %}
+                            <span class="badge badge-ok">Pago</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if conta.status == "pendente" %}
+                        <form method="POST" action="/contas-pagar/{{ conta.id }}/pagar/">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning">Marcar como paga</button>
+                        </form>
+                        {% else %}
+                        <span class="badge badge-ok">Concluído</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">Nenhuma conta cadastrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

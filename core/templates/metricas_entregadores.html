@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Métricas dos Entregadores</h1>
+</div>
+
+<div style="display:flex;gap:10px;margin-bottom:15px;">
+    <a href="?periodo=hoje" class="btn {% if periodo == 'hoje' %}btn-primary{% else %}btn-secondary{% endif %}">Hoje</a>
+    <a href="?periodo=semana" class="btn {% if periodo == 'semana' %}btn-primary{% else %}btn-secondary{% endif %}">Última Semana</a>
+    <a href="?periodo=mes" class="btn {% if periodo == 'mes' %}btn-primary{% else %}btn-secondary{% endif %}">Este Mês</a>
+</div>
+
+<div class="table-card">
+    <table>
+        <thead>
+            <tr>
+                <th>Posição</th>
+                <th>Entregador</th>
+                <th>Total Pedidos</th>
+                <th>Entregues</th>
+                <th>Cancelados</th>
+                <th>Taxa Sucesso</th>
+                <th>Valor Total</th>
+                <th>KM Rodado</th>
+                <th>Rotas</th>
+                <th>Comissão Est.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in metricas %}
+            <tr>
+                <td>
+                    {% if forloop.counter == 1 %}<span style="font-size:1.3em;">&#x1F947;</span>
+                    {% elif forloop.counter == 2 %}<span style="font-size:1.3em;">&#x1F948;</span>
+                    {% elif forloop.counter == 3 %}<span style="font-size:1.3em;">&#x1F949;</span>
+                    {% else %}{{ forloop.counter }}{% endif %}
+                </td>
+                <td><strong>{{ m.entregador.nome }}</strong></td>
+                <td>{{ m.total_pedidos }}</td>
+                <td>{{ m.total_entregues }}</td>
+                <td>{{ m.total_cancelados }}</td>
+                <td>
+                    {% if m.taxa_sucesso >= 90 %}<span class="badge badge-success">{{ m.taxa_sucesso }}%</span>
+                    {% elif m.taxa_sucesso >= 70 %}<span class="badge badge-warning">{{ m.taxa_sucesso }}%</span>
+                    {% else %}<span class="badge badge-danger">{{ m.taxa_sucesso }}%</span>{% endif %}
+                </td>
+                <td>R$ {{ m.valor_total|floatformat:2 }}</td>
+                <td>{{ m.km_total }} km</td>
+                <td>{{ m.total_rotas }}</td>
+                <td>R$ {{ m.comissao|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" style="text-align:center;">Nenhum dado encontrado para o período.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="form-card" style="margin-top:20px;">
+    <h3>Informações</h3>
+    <p><strong>Período:</strong> A partir de {{ data_inicio|date:"d/m/Y" }}</p>
+    <p>As métricas são calculadas em tempo real com base nos pedidos e rotas registrados.</p>
+    <p>A comissão estimada é baseada no percentual configurado para cada entregador.</p>
+</div>
+{% endblock %}

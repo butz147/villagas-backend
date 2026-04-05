@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Comissões</h1>
+</div>
+
+{% for msg in messages %}
+<div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+{% endfor %}
+
+<div class="form-card" style="margin-bottom:15px;">
+    <form method="get" style="display:flex;gap:10px;align-items:end;">
+        <div>
+            <label>Mês</label>
+            <select name="mes" class="form-input">
+                {% for m in "123456789" %}<option value="{{ forloop.counter }}" {% if mes == forloop.counter %}selected{% endif %}>{{ forloop.counter }}</option>{% endfor %}
+                <option value="10" {% if mes == 10 %}selected{% endif %}>10</option>
+                <option value="11" {% if mes == 11 %}selected{% endif %}>11</option>
+                <option value="12" {% if mes == 12 %}selected{% endif %}>12</option>
+            </select>
+        </div>
+        <div>
+            <label>Ano</label>
+            <input type="number" name="ano" value="{{ ano }}" class="form-input" style="width:100px;">
+        </div>
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+    </form>
+</div>
+
+<div class="metric-grid">
+    <div class="metric-card">
+        <div class="metric-value">R$ {{ total_geral|floatformat:2 }}</div>
+        <div class="metric-label">Total Comissões</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" style="color:#e67e22;">R$ {{ total_pendente|floatformat:2 }}</div>
+        <div class="metric-label">Pendente</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" style="color:#27ae60;">R$ {{ total_pago|floatformat:2 }}</div>
+        <div class="metric-label">Pago</div>
+    </div>
+</div>
+
+<div class="table-card" style="margin-bottom:20px;">
+    <h3>Resumo por Entregador</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Entregador</th>
+                <th>Qtd</th>
+                <th>Total</th>
+                <th>Pendente</th>
+                <th>Pago</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in resumo %}
+            <tr>
+                <td><strong>{{ r.entregador.nome }}</strong></td>
+                <td>{{ r.qtd }}</td>
+                <td>R$ {{ r.total|floatformat:2 }}</td>
+                <td style="color:#e67e22;">R$ {{ r.pendente|floatformat:2 }}</td>
+                <td style="color:#27ae60;">R$ {{ r.pago|floatformat:2 }}</td>
+                <td>
+                    {% if r.pendente > 0 %}
+                    <form method="post" style="display:inline;">{% csrf_token %}
+                        <input type="hidden" name="acao" value="pagar_todas">
+                        <input type="hidden" name="entregador_id" value="{{ r.entregador.id }}">
+                        <button type="submit" class="btn btn-sm btn-success">Pagar Todas</button>
+                    </form>
+                    {% else %}
+                    <span class="badge badge-success">Quitado</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;">Nenhuma comissão no período.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="table-card">
+    <h3>Detalhamento</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Entregador</th>
+                <th>Valor Venda</th>
+                <th>%</th>
+                <th>Comissão</th>
+                <th>Status</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in comissoes %}
+            <tr>
+                <td>{{ c.data|date:"d/m/Y" }}</td>
+                <td>{{ c.entregador.nome }}</td>
+                <td>R$ {{ c.valor_venda|floatformat:2 }}</td>
+                <td>{{ c.percentual }}%</td>
+                <td>R$ {{ c.valor_comissao|floatformat:2 }}</td>
+                <td>
+                    {% if c.status == "pendente" %}<span class="badge badge-warning">Pendente</span>
+                    {% else %}<span class="badge badge-success">Pago</span>{% endif %}
+                </td>
+                <td>
+                    {% if c.status == "pendente" %}
+                    <form method="post" style="display:inline;">{% csrf_token %}
+                        <input type="hidden" name="acao" value="pagar_comissao">
+                        <input type="hidden" name="comissao_id" value="{{ c.id }}">
+                        <button type="submit" class="btn btn-sm btn-success">Pagar</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" style="text-align:center;">Nenhuma comissão encontrada.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

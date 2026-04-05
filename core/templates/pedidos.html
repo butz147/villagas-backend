@@ -1,0 +1,1180 @@
+{% extends "base.html" %}
+
+{% block title %}Pedidos{% endblock %}
+
+{% block content %}
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .page-title h1 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .page-title p {
+    margin-top: 6px;
+    color: #475569;
+    font-size: 14px;
+  }
+
+  .panel-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+
+  .panel-card h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #0f172a;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+
+  .field-group label {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: block;
+    color: #334155;
+  }
+
+  .field-group input,
+  .field-group select,
+  .field-group textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+    color: #0f172a;
+    background: #fff;
+  }
+
+  .field-group input::placeholder,
+  .field-group textarea::placeholder {
+    color: #94a3b8;
+  }
+
+  .field-group textarea {
+    min-height: 80px;
+  }
+
+  .field-full {
+    grid-column: 1 / -1;
+  }
+
+  .btn-main {
+    background: #f59e0b;
+    color: #fff;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 14px;
+  }
+
+  .btn-main:hover {
+    background: #d97706;
+  }
+
+  .auto-refresh-box {
+    margin-bottom: 15px;
+    padding: 12px 14px;
+    background: #fff8db;
+    border: 1px solid #f5d97b;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #713f12;
+    font-weight: 600;
+  }
+
+  .resultado-cliente-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    color: #0f172a;
+    background: #fff;
+  }
+
+  .resultado-cliente-item:hover {
+    background: #f8fafc;
+  }
+
+  .painel-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .painel-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .painel-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ecfdf5;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #22c55e;
+    display: inline-block;
+  }
+
+  .filter-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: end;
+  }
+
+  .filter-form .field-group {
+    min-width: 180px;
+  }
+
+  .btn-filter {
+    height: 42px;
+    border: none;
+    background: #0f172a;
+    color: #fff;
+    padding: 0 16px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-filter:hover {
+    background: #020617;
+  }
+
+  .btn-clear {
+    height: 42px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: #0f172a;
+    padding: 0 16px;
+    border-radius: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .status-filter-tabs {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .status-filter-tab {
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #334155;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .status-filter-tab:hover {
+    background: #f8fafc;
+  }
+
+  .status-filter-tab.active {
+    background: #0f172a;
+    color: #fff;
+    border-color: #0f172a;
+  }
+
+  .pedidos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .pedido-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 22px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+  }
+
+  .pedido-card-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .pedido-card-body {
+    padding: 18px;
+  }
+
+  .pedido-card-footer {
+    padding: 16px 18px 18px;
+    border-top: 1px solid #f1f5f9;
+    background: #fff;
+  }
+
+  .pedido-novo .pedido-card-header {
+    background: #fff8db;
+    color: #713f12;
+  }
+
+  .pedido-preparando .pedido-card-header {
+    background: #e7f3ff;
+    color: #1d4ed8;
+  }
+
+  .pedido-saiu_entrega .pedido-card-header {
+    background: #efe7ff;
+    color: #6d28d9;
+  }
+
+  .pedido-entregue .pedido-card-header {
+    background: #e6f9ec;
+    color: #15803d;
+  }
+
+  .pedido-cancelado .pedido-card-header {
+    background: #fdecea;
+    color: #b91c1c;
+  }
+
+  .pedido-novo {
+    border: 2px solid #f59e0b !important;
+    animation: pulseNovo 1.5s infinite;
+  }
+
+  @keyframes pulseNovo {
+    0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+    70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  }
+
+  .pedido-id {
+    font-size: 18px;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .pedido-data {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: 4px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    background: rgba(255,255,255,0.7);
+  }
+
+  .pedido-cliente {
+    margin: 0 0 12px;
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  .pedido-produto {
+    font-size: 16px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 14px;
+  }
+
+  .pedido-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .pedido-info-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .pedido-info-box label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .pedido-info-box strong {
+    font-size: 18px;
+    color: #0f172a;
+  }
+
+  .pedido-observacoes {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 14px;
+    padding: 12px;
+    color: #7c2d12;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-top: 10px;
+  }
+
+  .pedido-observacoes strong {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .pedido-actions {
+    display: grid;
+    gap: 10px;
+  }
+
+  .pedido-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .status-btn-form {
+    margin: 0;
+  }
+
+  .status-btn {
+    min-height: 44px;
+    border: none;
+    border-radius: 12px;
+    padding: 0 14px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    color: #fff;
+  }
+
+  .status-btn-primary { background: #2563eb; }
+  .status-btn-primary:hover { background: #1d4ed8; }
+
+  .status-btn-warning {
+    background: #f59e0b;
+    color: #111827;
+  }
+  .status-btn-warning:hover { background: #d97706; color: #fff; }
+
+  .status-btn-success { background: #16a34a; }
+  .status-btn-success:hover { background: #15803d; }
+
+  .status-btn-danger { background: #dc2626; }
+  .status-btn-danger:hover { background: #b91c1c; }
+
+  .status-btn-secondary { background: #64748b; }
+  .status-btn-secondary:hover { background: #475569; }
+
+  .inline-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .inline-form select {
+    min-height: 42px;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0 12px;
+    background: #fff;
+    color: #0f172a;
+    font-weight: 700;
+  }
+
+  .inline-form button {
+    min-height: 42px;
+    border: none;
+    border-radius: 12px;
+    padding: 0 14px;
+    background: #0f172a;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .empty-panel {
+    border: 1px dashed #cbd5e1;
+    border-radius: 20px;
+    background: #fff;
+    color: #64748b;
+    padding: 40px 20px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .toast-novo-pedido {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #16a34a;
+    color: white;
+    padding: 14px 18px;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+    z-index: 9999;
+    font-weight: 700;
+  }
+
+  .messages-wrap {
+    margin-bottom: 16px;
+  }
+
+  .message-item {
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  .message-item.success {
+    background: #ecfdf5;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+
+  .message-item.error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  .message-item.warning {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fdba74;
+  }
+
+  .message-item.info {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
+
+  @media (max-width: 768px) {
+    .page-title h1 {
+      font-size: 26px;
+    }
+
+    .panel-card {
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .painel-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .painel-toolbar-left,
+    .painel-toolbar-right,
+    .filter-form {
+      width: 100%;
+    }
+
+    .filter-form {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .filter-form .field-group {
+      min-width: 100%;
+    }
+
+    .btn-filter,
+    .btn-clear {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .pedidos-grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .pedido-card {
+      border-radius: 18px;
+    }
+
+    .pedido-card-header,
+    .pedido-card-body,
+    .pedido-card-footer {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    .pedido-info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pedido-cliente {
+      font-size: 20px;
+    }
+
+    .pedido-produto {
+      font-size: 15px;
+    }
+
+    .pedido-actions-row,
+    .inline-form {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .status-btn,
+    .inline-form button,
+    .inline-form select {
+      width: 100%;
+      min-height: 46px;
+      font-size: 14px;
+    }
+
+    .status-filter-tabs {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .status-filter-tab {
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .toast-novo-pedido {
+      left: 14px;
+      right: 14px;
+      top: 14px;
+      text-align: center;
+    }
+  }
+</style>
+
+<div class="page-header">
+  <div class="page-title">
+    <h1>Painel de Pedidos</h1>
+    <p>Loja: {{ loja.nome }}</p>
+  </div>
+</div>
+
+{% if messages %}
+  <div class="messages-wrap">
+    {% for message in messages %}
+      <div class="message-item {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="panel-card">
+  <h3>Novo pedido</h3>
+
+  {% if erro %}
+    <div class="message-item error">{{ erro }}</div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-grid">
+      <div class="field-group">
+        <label>Produto</label>
+        <select name="produto" required>
+          <option value="">Selecione</option>
+          {% for produto in produtos %}
+            <option value="{{ produto.id }}">{{ produto.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Quantidade</label>
+        <input type="number" name="quantidade" value="1" min="1">
+      </div>
+
+      <div class="field-group">
+        <label>Preço</label>
+        <input type="text" name="preco_unitario">
+      </div>
+
+      <div class="field-group">
+        <label>Pagamento</label>
+        <select name="forma_pagamento">
+          <option value="dinheiro">Dinheiro</option>
+          <option value="pix">Pix</option>
+          <option value="credito">Crédito</option>
+          <option value="debito">Débito</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Entregador</label>
+        <select name="entregador">
+          <option value="">Sem entregador</option>
+          {% for entregador in entregadores %}
+            <option value="{{ entregador.id }}">{{ entregador.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group field-full" style="position: relative;">
+        <label>Buscar cliente</label>
+        <input type="text" id="cliente_busca" placeholder="Digite nome ou telefone">
+        <input type="hidden" name="cliente" id="cliente_id_hidden">
+
+        <div id="cliente_resultados" style="
+          position:absolute;
+          background:#fff;
+          border:1px solid #ddd;
+          border-radius:12px;
+          width:100%;
+          display:none;
+          z-index:10;
+          margin-top:4px;
+          overflow:hidden;
+          box-shadow:0 12px 30px rgba(15,23,42,0.08);
+        "></div>
+      </div>
+
+      <div class="field-group">
+        <label>Novo cliente nome</label>
+        <input type="text" name="cliente_nome_novo">
+      </div>
+
+      <div class="field-group">
+        <label>Telefone</label>
+        <input type="text" name="cliente_telefone_novo">
+      </div>
+
+      <div class="field-group field-full">
+        <label>Endereço</label>
+        <input type="text" name="cliente_endereco_novo">
+      </div>
+
+      <div class="field-group field-full">
+        <label>Observações</label>
+        <textarea name="observacoes"></textarea>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-main">Criar pedido</button>
+  </form>
+</div>
+
+<div class="panel-card">
+  <div class="painel-toolbar">
+    <div class="painel-toolbar-left">
+      <div class="live-pill">
+        <span class="live-dot"></span>
+        Painel ao vivo ativo
+      </div>
+
+      <div class="auto-refresh-box" style="margin:0;">
+        Novos pedidos aparecem automaticamente sem recarregar a página.
+      </div>
+    </div>
+
+    <div class="painel-toolbar-right">
+      <form method="get" class="filter-form">
+        <div class="field-group">
+          <label>Buscar</label>
+          <input
+            type="text"
+            name="q"
+            placeholder="Cliente, telefone, produto..."
+            value="{{ busca|default:'' }}"
+          >
+        </div>
+
+        <div class="field-group">
+          <label>Status</label>
+          <select name="status">
+            <option value="">Todos</option>
+            {% for valor,label in status_choices %}
+              <option value="{{ valor }}" {% if status_filtro == valor %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit" class="btn-filter">Filtrar</button>
+        <a href="{% url 'pedidos' %}" class="btn-clear">Limpar</a>
+      </form>
+    </div>
+  </div>
+
+  <div class="status-filter-tabs">
+    <a href="{% url 'pedidos' %}{% if busca %}?q={{ busca|urlencode }}{% endif %}"
+       class="status-filter-tab {% if not status_filtro %}active{% endif %}">
+      Todos
+    </a>
+
+    {% for valor,label in status_choices %}
+      <a
+        href="{% url 'pedidos' %}?status={{ valor }}{% if busca %}&q={{ busca|urlencode }}{% endif %}"
+        class="status-filter-tab {% if status_filtro == valor %}active{% endif %}"
+      >
+        {{ label }}
+      </a>
+    {% endfor %}
+  </div>
+
+  <div id="pedidos-grid" class="pedidos-grid">
+    {% for pedido in pedidos %}
+      <div class="pedido-card pedido-{{ pedido.status }}" data-pedido-id="{{ pedido.id }}">
+        <div class="pedido-card-header">
+          <div>
+            <p class="pedido-id">Pedido #{{ pedido.id }}</p>
+            <div class="pedido-data">{{ pedido.data_pedido|date:"d/m/Y H:i" }}</div>
+          </div>
+          <span class="status-badge">{{ pedido.get_status_display }}</span>
+        </div>
+
+        <div class="pedido-card-body">
+          <h3 class="pedido-cliente">
+            {% if pedido.cliente %}
+              {{ pedido.cliente.nome }}
+            {% else %}
+              Sem cliente
+            {% endif %}
+          </h3>
+
+          <div class="pedido-produto">{{ pedido.produto.nome }}</div>
+
+          <div class="pedido-info-grid">
+            <div class="pedido-info-box">
+              <label>Quantidade</label>
+              <strong>{{ pedido.quantidade }}</strong>
+            </div>
+
+            <div class="pedido-info-box">
+              <label>Total</label>
+              <strong>R$ {{ pedido.total_pedido|floatformat:2 }}</strong>
+            </div>
+          </div>
+
+          {% if pedido.cliente and pedido.cliente.telefone %}
+            <div class="pedido-info-box" style="margin-bottom:12px;">
+              <label>Telefone</label>
+              <strong style="font-size:16px;">{{ pedido.cliente.telefone }}</strong>
+            </div>
+          {% endif %}
+
+          {% if pedido.cliente and pedido.cliente.endereco %}
+            <div class="pedido-info-box">
+              <label>Endereço</label>
+              <strong style="font-size:15px;">{{ pedido.cliente.endereco }}</strong>
+            </div>
+          {% endif %}
+
+          {% if pedido.entregador %}
+            <div class="pedido-info-box" style="margin-top:12px;">
+              <label>Entregador</label>
+              <strong style="font-size:15px;">{{ pedido.entregador.nome }}</strong>
+            </div>
+          {% endif %}
+
+          {% if pedido.observacoes %}
+            <div class="pedido-observacoes">
+              <strong>Observações</strong>
+              {{ pedido.observacoes }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="pedido-card-footer">
+          <div class="pedido-actions">
+            <div class="pedido-actions-row">
+              {% if pedido.status == 'novo' %}
+                <form method="post" action="{% url 'alterar_status_pedido' pedido.id 'preparando' %}" class="status-btn-form">
+                  {% csrf_token %}
+                  <button type="submit" class="status-btn status-btn-primary">Aceitar / Preparando</button>
+                </form>
+
+                <form method="post" action="{% url 'alterar_status_pedido' pedido.id 'cancelado' %}" class="status-btn-form">
+                  {% csrf_token %}
+                  <button type="submit" class="status-btn status-btn-danger">Cancelar</button>
+                </form>
+              {% endif %}
+
+              {% if pedido.status == 'preparando' %}
+                <form method="post" action="{% url 'alterar_status_pedido' pedido.id 'saiu_entrega' %}" class="status-btn-form">
+                  {% csrf_token %}
+                  <button type="submit" class="status-btn status-btn-warning">Saiu para entrega</button>
+                </form>
+
+                <form method="post" action="{% url 'alterar_status_pedido' pedido.id 'cancelado' %}" class="status-btn-form">
+                  {% csrf_token %}
+                  <button type="submit" class="status-btn status-btn-danger">Cancelar</button>
+                </form>
+              {% endif %}
+
+              {% if pedido.status == 'saiu_entrega' %}
+                <form method="post" action="{% url 'alterar_status_pedido' pedido.id 'entregue' %}" class="status-btn-form">
+                  {% csrf_token %}
+                  <button type="submit" class="status-btn status-btn-success">Marcar como entregue</button>
+                </form>
+              {% endif %}
+
+              {% if pedido.status == 'cancelado' %}
+                <form method="post" action="{% url 'alterar_status_pedido' pedido.id 'novo' %}" class="status-btn-form">
+                  {% csrf_token %}
+                  <button type="submit" class="status-btn status-btn-secondary">Reabrir pedido</button>
+                </form>
+              {% endif %}
+            </div>
+
+            <form method="post" action="{% url 'atualizar_status_pedido' pedido.id %}" class="inline-form">
+              {% csrf_token %}
+              <select name="status">
+                {% for valor,label in status_choices %}
+                  <option value="{{ valor }}" {% if pedido.status == valor %}selected{% endif %}>
+                    {{ label }}
+                  </option>
+                {% endfor %}
+              </select>
+              <button type="submit">Salvar status manualmente</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="empty-panel" id="empty-panel">
+        Nenhum pedido encontrado.
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<audio id="somPedido" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+<script>
+  const pedidosGrid = document.getElementById("pedidos-grid");
+  const somPedido = document.getElementById("somPedido");
+
+  let ultimoPedidoId = null;
+  let somLiberado = false;
+
+  function csrfToken() {
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return input ? input.value : "";
+  }
+
+  function mostrarToastNovoPedido() {
+    const aviso = document.createElement("div");
+    aviso.className = "toast-novo-pedido";
+    aviso.innerHTML = "🚨 <strong>NOVO PEDIDO!</strong>";
+    document.body.appendChild(aviso);
+    setTimeout(() => aviso.remove(), 3000);
+  }
+
+  function botoesRapidos(pedido) {
+    let html = '';
+
+    if (pedido.status === 'novo') {
+      html += `
+        <form method="post" action="/pedidos/${pedido.id}/status/preparando/" class="status-btn-form">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken()}">
+          <button type="submit" class="status-btn status-btn-primary">Aceitar / Preparando</button>
+        </form>
+
+        <form method="post" action="/pedidos/${pedido.id}/status/cancelado/" class="status-btn-form">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken()}">
+          <button type="submit" class="status-btn status-btn-danger">Cancelar</button>
+        </form>
+      `;
+    }
+
+    if (pedido.status === 'preparando') {
+      html += `
+        <form method="post" action="/pedidos/${pedido.id}/status/saiu_entrega/" class="status-btn-form">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken()}">
+          <button type="submit" class="status-btn status-btn-warning">Saiu para entrega</button>
+        </form>
+
+        <form method="post" action="/pedidos/${pedido.id}/status/cancelado/" class="status-btn-form">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken()}">
+          <button type="submit" class="status-btn status-btn-danger">Cancelar</button>
+        </form>
+      `;
+    }
+
+    if (pedido.status === 'saiu_entrega') {
+      html += `
+        <form method="post" action="/pedidos/${pedido.id}/status/entregue/" class="status-btn-form">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken()}">
+          <button type="submit" class="status-btn status-btn-success">Marcar como entregue</button>
+        </form>
+      `;
+    }
+
+    if (pedido.status === 'cancelado') {
+      html += `
+        <form method="post" action="/pedidos/${pedido.id}/status/novo/" class="status-btn-form">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken()}">
+          <button type="submit" class="status-btn status-btn-secondary">Reabrir pedido</button>
+        </form>
+      `;
+    }
+
+    return html;
+  }
+
+  function opcoesStatus(statusAtual) {
+    const opcoes = [
+      ["novo", "Novo"],
+      ["preparando", "Preparando"],
+      ["saiu_entrega", "Saiu para entrega"],
+      ["entregue", "Entregue"],
+      ["cancelado", "Cancelado"],
+    ];
+
+    return opcoes.map(([valor, label]) => {
+      const selected = valor === statusAtual ? "selected" : "";
+      return `<option value="${valor}" ${selected}>${label}</option>`;
+    }).join("");
+  }
+
+  function montarCard(pedido) {
+    const telefoneHtml = pedido.telefone
+      ? `
+        <div class="pedido-info-box" style="margin-bottom:12px;">
+          <label>Telefone</label>
+          <strong style="font-size:16px;">${pedido.telefone}</strong>
+        </div>
+      `
+      : "";
+
+    const enderecoHtml = pedido.endereco
+      ? `
+        <div class="pedido-info-box">
+          <label>Endereço</label>
+          <strong style="font-size:15px;">${pedido.endereco}</strong>
+        </div>
+      `
+      : "";
+
+    const observacoesHtml = pedido.observacoes
+      ? `
+        <div class="pedido-observacoes">
+          <strong>Observações</strong>
+          ${pedido.observacoes}
+        </div>
+      `
+      : "";
+
+    return `
+      <div class="pedido-card pedido-${pedido.status}" data-pedido-id="${pedido.id}">
+        <div class="pedido-card-header">
+          <div>
+            <p class="pedido-id">Pedido #${pedido.id}</p>
+            <div class="pedido-data">${pedido.data}</div>
+          </div>
+          <span class="status-badge">${pedido.status_display}</span>
+        </div>
+
+        <div class="pedido-card-body">
+          <h3 class="pedido-cliente">${pedido.cliente}</h3>
+          <div class="pedido-produto">${pedido.produto}</div>
+
+          <div class="pedido-info-grid">
+            <div class="pedido-info-box">
+              <label>Quantidade</label>
+              <strong>${pedido.quantidade}</strong>
+            </div>
+
+            <div class="pedido-info-box">
+              <label>Total</label>
+              <strong>R$ ${pedido.total}</strong>
+            </div>
+          </div>
+
+          ${telefoneHtml}
+          ${enderecoHtml}
+          ${observacoesHtml}
+        </div>
+
+        <div class="pedido-card-footer">
+          <div class="pedido-actions">
+            <div class="pedido-actions-row">
+              ${botoesRapidos(pedido)}
+            </div>
+
+            <form method="post" action="/pedido/${pedido.id}/status/" class="inline-form">
+              <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken()}">
+              <select name="status">
+                ${opcoesStatus(pedido.status)}
+              </select>
+              <button type="submit">Salvar status manualmente</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function atualizarPedidos() {
+    try {
+      const response = await fetch("/api/pedidos/painel/", {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      });
+
+      const data = await response.json();
+      const pedidos = data.pedidos || [];
+
+      const primeiroIdAtual = pedidos.length > 0 ? String(pedidos[0].id) : null;
+
+      if (ultimoPedidoId && primeiroIdAtual && Number(primeiroIdAtual) > Number(ultimoPedidoId)) {
+        if (somLiberado) {
+          somPedido.currentTime = 0;
+          somPedido.play().catch(() => {});
+        }
+        mostrarToastNovoPedido();
+      }
+
+      if (!ultimoPedidoId) {
+        ultimoPedidoId = primeiroIdAtual;
+      } else if (primeiroIdAtual) {
+        ultimoPedidoId = primeiroIdAtual;
+      }
+
+      if (pedidos.length === 0) {
+        pedidosGrid.innerHTML = `
+          <div class="empty-panel" id="empty-panel">
+            Nenhum pedido encontrado.
+          </div>
+        `;
+        return;
+      }
+
+      pedidosGrid.innerHTML = pedidos.map(montarCard).join("");
+    } catch (error) {
+      console.error("Erro ao atualizar pedidos:", error);
+    }
+  }
+
+  function liberarSom() {
+    if (!somLiberado) {
+      somPedido.play().then(() => {
+        somPedido.pause();
+        somPedido.currentTime = 0;
+        somLiberado = true;
+      }).catch(() => {});
+    }
+  }
+
+  document.addEventListener("click", liberarSom, { once: true });
+  document.addEventListener("keydown", liberarSom, { once: true });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const primeiroCard = document.querySelector("[data-pedido-id]");
+    if (primeiroCard) {
+      ultimoPedidoId = primeiroCard.getAttribute("data-pedido-id");
+    }
+
+    setInterval(function () {
+      if (document.visibilityState === "visible") {
+        atualizarPedidos();
+      }
+    }, 5000);
+  });
+</script>
+
+<script>
+  document.getElementById("cliente_busca").addEventListener("input", function() {
+    let termo = this.value;
+
+    if (termo.length < 2) {
+      document.getElementById("cliente_resultados").style.display = "none";
+      return;
+    }
+
+    fetch(`/clientes/buscar/ajax/?q=${termo}`)
+      .then(r => r.json())
+      .then(data => {
+        let box = document.getElementById("cliente_resultados");
+        box.innerHTML = "";
+
+        data.resultados.forEach(c => {
+          let div = document.createElement("div");
+          div.className = "resultado-cliente-item";
+          div.innerHTML = `${c.nome} - ${c.telefone}`;
+          div.onclick = () => {
+            document.getElementById("cliente_id_hidden").value = c.id;
+            document.getElementById("cliente_busca").value = `${c.nome} - ${c.telefone}`;
+            box.style.display = "none";
+          };
+          box.appendChild(div);
+        });
+
+        box.style.display = data.resultados.length ? "block" : "none";
+      });
+  });
+</script>
+{% endblock %}

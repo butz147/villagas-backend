@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Painel Administrativo{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Painel Administrativo</h1>
+    <p>Loja: {{ loja.nome }} | Data: {{ data|date:"d/m/Y" }}</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon"><i class="bi bi-cart-fill"></i></div>
+        <h3>Vendas do dia</h3>
+        <div class="value">R$ {{ total_vendas }}</div>
+        <p>Quantidade: {{ quantidade_vendas }}</p>
+    </div>
+
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon"><i class="bi bi-receipt-cutoff"></i></div>
+        <h3>Pedidos do dia</h3>
+        <div class="value">R$ {{ total_pedidos }}</div>
+        <p>Quantidade: {{ quantidade_pedidos }}</p>
+    </div>
+
+    <div class="card metric-card metric-red">
+        <div class="metric-icon"><i class="bi bi-cash-stack"></i></div>
+        <h3>Despesas do dia</h3>
+        <div class="value">R$ {{ total_despesas }}</div>
+        <p>Quantidade: {{ quantidade_despesas }}</p>
+    </div>
+
+    <div class="card metric-card metric-red">
+        <div class="metric-icon"><i class="bi bi-box-arrow-up-right"></i></div>
+        <h3>Retiradas do dia</h3>
+        <div class="value">R$ {{ total_retiradas }}</div>
+        <p>Quantidade: {{ quantidade_retiradas }}</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-green">
+        <div class="metric-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <h3>Lucro líquido</h3>
+        <div class="value {% if lucro_liquido >= 0 %}positive{% else %}negative{% endif %}">
+            R$ {{ lucro_liquido }}
+        </div>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon"><i class="bi bi-wallet2"></i></div>
+        <h3>Saldo acumulado</h3>
+        <div class="value {% if saldo_acumulado >= 0 %}positive{% else %}negative{% endif %}">
+            R$ {{ saldo_acumulado }}
+        </div>
+    </div>
+
+    <div class="card metric-card metric-red">
+        <div class="metric-icon"><i class="bi bi-pin-angle-fill"></i></div>
+        <h3>Contas pendentes</h3>
+        <div class="value">R$ {{ total_contas_pendentes }}</div>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon"><i class="bi bi-truck"></i></div>
+        <h3>Compras pendentes</h3>
+        <div class="value {% if total_compras_pendentes > 0 %}negative{% else %}positive{% endif %}">
+            {{ total_compras_pendentes }}
+        </div>
+        <p>Aguardando aprovação</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Alertas de estoque baixo</div>
+
+    {% if estoque_baixo %}
+        {% for item in estoque_baixo %}
+            <div class="alert alert-error">
+                {{ item.nome }} com estoque baixo: {{ item.estoque_cheio }}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-success">
+            Nenhum produto com estoque baixo.
+        </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="section-title">Compras aguardando aprovação</div>
+
+    {% if compras_pendentes %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Produto</th>
+                        <th>Fornecedor</th>
+                        <th>Quantidade</th>
+                        <th>Registrado por</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for compra in compras_pendentes %}
+                    <tr>
+                        <td>{{ compra.data|date:"d/m/Y H:i" }}</td>
+                        <td>{{ compra.produto.nome }}</td>
+                        <td>{{ compra.fornecedor|default:"-" }}</td>
+                        <td>{{ compra.quantidade }}</td>
+                        <td>
+                            {% if compra.registrado_por %}
+                                {{ compra.registrado_por.username }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="btn btn-success" href="/compras-estoque/{{ compra.id }}/aprovar/">Aprovar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Nenhuma compra pendente.</p>
+    {% endif %}
+</div>
+{% endblock %}

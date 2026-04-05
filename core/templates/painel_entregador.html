@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Painel do Entregador{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Painel do Entregador</h1>
+    <p>Pedidos em rota e entregas do dia.</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon">🛵</div>
+        <h3>Pedidos em rota</h3>
+        <div class="value">{{ pedidos|length }}</div>
+        <p>Pedidos disponíveis na tela</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Pedidos para entrega</div>
+
+    {% if pedidos %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Produto</th>
+                        <th>Quantidade</th>
+                        <th>Pagamento</th>
+                        <th>Status</th>
+                        <th>Observações</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pedido in pedidos %}
+                    <tr>
+                        <td>#{{ pedido.id }}</td>
+                        <td>{{ pedido.cliente.nome }}</td>
+                        <td>{{ pedido.produto.nome }}</td>
+                        <td>{{ pedido.quantidade }}</td>
+                        <td>{{ pedido.get_forma_pagamento_display }}</td>
+                        <td>
+                            {% if pedido.status == "saiu_entrega" %}
+                                <span class="badge badge-info">Saiu para entrega</span>
+                            {% elif pedido.status == "entregue" %}
+                                <span class="badge badge-ok">Entregue</span>
+                            {% else %}
+                                <span class="badge badge-low">{{ pedido.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ pedido.observacoes|default:"-" }}</td>
+                        <td>
+                            {% if pedido.status == "saiu_entrega" %}
+                                <form method="POST" action="/entregar-pedido/{{ pedido.id }}/">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success">Marcar como entregue</button>
+                                </form>
+                            {% else %}
+                                <span>-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-success">
+            Nenhum pedido em rota no momento.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

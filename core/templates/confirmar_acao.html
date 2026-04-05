@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar ação{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Confirmar ação</h1>
+    <p>Revise antes de continuar.</p>
+</div>
+
+<div class="card">
+    <div class="section-title">{{ titulo }}</div>
+
+    <div class="alert alert-error">
+        {{ mensagem }}
+    </div>
+
+    {% if detalhes %}
+        <div class="card" style="margin-top:14px;">
+            <div class="section-title">Detalhes</div>
+            <p>{{ detalhes }}</p>
+        </div>
+    {% endif %}
+
+    <form method="POST" style="margin-top:18px;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Confirmar</button>
+        <a href="{{ voltar_url }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

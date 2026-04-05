@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Operação bloqueada</title>
+
+    <style>
+        body{
+            font-family: Arial;
+            background:#f4f6f9;
+            padding:50px;
+        }
+
+        .card{
+            max-width:600px;
+            margin:auto;
+            background:white;
+            padding:30px;
+            border-radius:10px;
+            box-shadow:0 0 10px rgba(0,0,0,0.08);
+            text-align:center;
+        }
+
+        h1{
+            color:#dc3545;
+        }
+
+        a{
+            display:inline-block;
+            margin-top:20px;
+            padding:10px 15px;
+            background:#0d6efd;
+            color:white;
+            text-decoration:none;
+            border-radius:5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Operação bloqueada</h1>
+    <p>{{ mensagem }}</p>
+
+    <a href="/dashboard/">Voltar para o Dashboard</a>
+</div>
+
+</body>
+</html>

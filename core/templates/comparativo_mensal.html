@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Comparativo Mensal{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Comparativo Mensal</h1>
+    <p>Loja: {{ loja.nome }} | {{ mes_atual_nome }}/{{ ano_atual }} x {{ mes_anterior_nome }}/{{ ano_anterior }}</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon">📅</div>
+        <h3>Mês atual</h3>
+        <div class="value" style="font-size:24px;">{{ mes_atual_nome }}/{{ ano_atual }}</div>
+        <p>Período atual</p>
+    </div>
+
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon">🗓️</div>
+        <h3>Mês anterior</h3>
+        <div class="value" style="font-size:24px;">{{ mes_anterior_nome }}/{{ ano_anterior }}</div>
+        <p>Base de comparação</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Comparativo financeiro</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Indicador</th>
+                    <th>Mês Atual</th>
+                    <th>Mês Anterior</th>
+                    <th>Diferença</th>
+                    <th>Variação %</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Faturamento Total</td>
+                    <td>R$ {{ faturamento_total_atual }}</td>
+                    <td>R$ {{ faturamento_total_anterior }}</td>
+                    <td>
+                        {% if dif_faturamento >= 0 %}
+                            <span class="badge badge-ok">R$ {{ dif_faturamento }}</span>
+                        {% else %}
+                            <span class="badge badge-danger">R$ {{ dif_faturamento }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if perc_faturamento >= 0 %}
+                            <span class="badge badge-ok">{{ perc_faturamento|floatformat:2 }}%</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ perc_faturamento|floatformat:2 }}%</span>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Despesas</td>
+                    <td>R$ {{ total_despesas_atual }}</td>
+                    <td>R$ {{ total_despesas_anterior }}</td>
+                    <td>
+                        {% if dif_despesas <= 0 %}
+                            <span class="badge badge-ok">R$ {{ dif_despesas }}</span>
+                        {% else %}
+                            <span class="badge badge-danger">R$ {{ dif_despesas }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if perc_despesas <= 0 %}
+                            <span class="badge badge-ok">{{ perc_despesas|floatformat:2 }}%</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ perc_despesas|floatformat:2 }}%</span>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Retiradas</td>
+                    <td>R$ {{ total_retiradas_atual }}</td>
+                    <td>R$ {{ total_retiradas_anterior }}</td>
+                    <td>
+                        {% if dif_retiradas <= 0 %}
+                            <span class="badge badge-ok">R$ {{ dif_retiradas }}</span>
+                        {% else %}
+                            <span class="badge badge-danger">R$ {{ dif_retiradas }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if perc_retiradas <= 0 %}
+                            <span class="badge badge-ok">{{ perc_retiradas|floatformat:2 }}%</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ perc_retiradas|floatformat:2 }}%</span>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Lucro Líquido</td>
+                    <td>R$ {{ lucro_liquido_atual }}</td>
+                    <td>R$ {{ lucro_liquido_anterior }}</td>
+                    <td>
+                        {% if dif_lucro >= 0 %}
+                            <span class="badge badge-ok">R$ {{ dif_lucro }}</span>
+                        {% else %}
+                            <span class="badge badge-danger">R$ {{ dif_lucro }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if perc_lucro >= 0 %}
+                            <span class="badge badge-ok">{{ perc_lucro|floatformat:2 }}%</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ perc_lucro|floatformat:2 }}%</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

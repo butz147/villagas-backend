@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Retiradas de Funcionários{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Retiradas de Funcionários</h1>
+    <p>Loja: {{ loja.nome }} | Controle de valores retirados do caixa</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-red">
+        <div class="metric-icon">📤</div>
+        <h3>Total de retiradas</h3>
+        <div class="value">R$ {{ total }}</div>
+        <p>Saídas registradas hoje</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon">👥</div>
+        <h3>Quantidade</h3>
+        <div class="value">{{ retiradas|length }}</div>
+        <p>Lançamentos do dia</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Nova retirada</div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Funcionário</label>
+                    <select name="funcionario" required>
+                        {% for f in funcionarios %}
+                        <option value="{{ f.id }}">{{ f.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Valor</label>
+                    <input type="number" step="0.01" name="valor" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select name="tipo">
+                        <option value="adiantamento">Adiantamento</option>
+                        <option value="alimentacao">Alimentação</option>
+                        <option value="vale">Vale</option>
+                        <option value="combustivel">Combustível</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top:14px;">
+                <label>Descrição</label>
+                <textarea name="descricao"></textarea>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button type="submit" class="btn btn-success">Salvar retirada</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Visão rápida</div>
+
+        <div class="alert alert-success">
+            Registre aqui valores entregues ao funcionário e retirados do caixa.
+        </div>
+
+        <div class="alert alert-success">
+            Essas retiradas entram automaticamente no cálculo do lucro.
+        </div>
+
+        <div class="alert alert-success">
+            Use a descrição para detalhar o motivo quando necessário.
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Retiradas de hoje</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Funcionário</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Descrição</th>
+                    <th>Lançado por</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for r in retiradas %}
+                <tr>
+                    <td>{{ r.data|date:"d/m H:i" }}</td>
+                    <td>{{ r.funcionario.username }}</td>
+                    <td>{{ r.get_tipo_display }}</td>
+                    <td>R$ {{ r.valor }}</td>
+                    <td>{{ r.descricao|default:"-" }}</td>
+                    <td>
+                        {% if r.registrado_por %}
+                            {{ r.registrado_por.username }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">Nenhuma retirada hoje</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

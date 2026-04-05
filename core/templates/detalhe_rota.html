@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Rota {{ rota.data_rota|date:"d/m/Y" }} - {{ rota.veiculo.placa }}</h1>
+    <a href="/rotas/" class="btn btn-secondary">Voltar</a>
+</div>
+
+{% for msg in messages %}
+<div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+{% endfor %}
+
+<div class="metric-grid">
+    <div class="metric-card">
+        <div class="metric-value">{{ rota.get_status_display }}</div>
+        <div class="metric-label">Status</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ rota.entregador.nome|default:"-" }}</div>
+        <div class="metric-label">Entregador</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ rota.km_rodado }} km</div>
+        <div class="metric-label">KM Rodado</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ entregas|length }}</div>
+        <div class="metric-label">Entregas</div>
+    </div>
+</div>
+
+{% if rota.status == "planejada" or rota.status == "em_andamento" %}
+<div class="form-card" style="margin-bottom:20px;">
+    <h3>Adicionar Entrega à Rota</h3>
+    <form method="post" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="adicionar_entrega">
+        <div>
+            <label>Cliente</label>
+            <select name="cliente" class="form-input">
+                <option value="">Selecione</option>
+                {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Pedido</label>
+            <select name="pedido" class="form-input">
+                <option value="">Sem pedido vinculado</option>
+                {% for p in pedidos_disponiveis %}
+                <option value="{{ p.id }}">#{{ p.id }} - {{ p.cliente.nome|default:"Sem cliente" }} - {{ p.produto.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Adicionar</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="table-card">
+    <h3>Entregas da Rota</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Ordem</th>
+                <th>Cliente</th>
+                <th>Pedido</th>
+                <th>Status</th>
+                <th>Hora Entrega</th>
+                <th>Observações</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in entregas %}
+            <tr>
+                <td>{{ e.ordem }}</td>
+                <td>{{ e.cliente.nome|default:"-" }}</td>
+                <td>{% if e.pedido %}#{{ e.pedido.id }}{% else %}-{% endif %}</td>
+                <td>
+                    {% if e.status == "pendente" %}<span class="badge badge-warning">Pendente</span>
+                    {% elif e.status == "entregue" %}<span class="badge badge-success">Entregue</span>
+                    {% elif e.status == "falha" %}<span class="badge badge-danger">Falha</span>
+                    {% else %}<span class="badge badge-secondary">Cancelada</span>{% endif %}
+                </td>
+                <td>{{ e.hora_entrega|default:"-" }}</td>
+                <td>{{ e.observacoes|default:"-" }}</td>
+                <td>
+                    {% if e.status == "pendente" %}
+                    <form method="post" style="display:inline;">{% csrf_token %}
+                        <input type="hidden" name="acao" value="marcar_entregue">
+                        <input type="hidden" name="entrega_id" value="{{ e.id }}">
+                        <button type="submit" class="btn btn-sm btn-success">Entregue</button>
+                    </form>
+                    <form method="post" style="display:inline;">{% csrf_token %}
+                        <input type="hidden" name="acao" value="marcar_falha">
+                        <input type="hidden" name="entrega_id" value="{{ e.id }}">
+                        <input type="text" name="obs_falha" placeholder="Motivo" class="form-input" style="width:120px;display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger">Falha</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" style="text-align:center;">Nenhuma entrega na rota.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if rota.observacoes %}
+<div class="form-card" style="margin-top:20px;">
+    <h3>Observações</h3>
+    <p>{{ rota.observacoes }}</p>
+</div>
+{% endif %}
+{% endblock %}

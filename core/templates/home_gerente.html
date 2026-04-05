@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Início do Gerente{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Início do Gerente</h1>
+    <p>Atalhos rápidos para a operação e gestão da loja.</p>
+</div>
+
+<div class="grid">
+    <a href="/dashboard/" class="card metric-card metric-yellow">
+        <div class="metric-icon"><i class="bi bi-bar-chart-fill"></i></div>
+        <h3>Dashboard</h3>
+        <p>Visão geral da operação</p>
+    </a>
+
+    <a href="/fechamento-caixa/" class="card metric-card metric-cream">
+        <div class="metric-icon"><i class="bi bi-cash-coin"></i></div>
+        <h3>Fechamento</h3>
+        <p>Conferir e fechar o dia</p>
+    </a>
+
+    <a href="/estoque-admin/" class="card metric-card metric-green">
+        <div class="metric-icon"><i class="bi bi-box-seam"></i></div>
+        <h3>Estoque</h3>
+        <p>Visão completa do estoque</p>
+    </a>
+
+    <a href="/movimentacao-estoque/" class="card metric-card metric-yellow">
+        <div class="metric-icon"><i class="bi bi-pencil-square"></i></div>
+        <h3>Movimentação</h3>
+        <p>Entrada, saída e ajustes</p>
+    </a>
+
+    <a href="/compras-estoque/" class="card metric-card metric-cream">
+        <div class="metric-icon"><i class="bi bi-truck"></i></div>
+        <h3>Compras</h3>
+        <p>Registrar chegada de carga</p>
+    </a>
+
+    <a href="/despesas/" class="card metric-card metric-red">
+        <div class="metric-icon">💸</div>
+        <h3>Despesas</h3>
+        <p>Lançar gastos do dia</p>
+    </a>
+
+    <a href="/retiradas-funcionarios/" class="card metric-card metric-red">
+        <div class="metric-icon">📤</div>
+        <h3>Retiradas</h3>
+        <p>Registrar saídas de caixa</p>
+    </a>
+
+    <a href="/pedidos/" class="card metric-card metric-green">
+        <div class="metric-icon">📦</div>
+        <h3>Pedidos</h3>
+        <p>Acompanhar pedidos da loja</p>
+    </a>
+</div>
+
+<div class="card">
+    <div class="section-title">Ações rápidas</div>
+
+    <div class="grid">
+        <a href="/venda/" class="btn btn-success">Abrir venda</a>
+        <a href="/clientes/" class="btn btn-primary">Ver clientes</a>
+        <a href="/historico-fechamentos/" class="btn btn-secondary">Histórico</a>
+        <a href="/logout/" class="btn btn-warning">Sair</a>
+    </div>
+</div>
+{% endblock %}

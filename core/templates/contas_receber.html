@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Contas a Receber{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Contas a Receber</h1>
+    <p>Loja: {{ loja.nome }} | Controle de valores a receber dos clientes</p>
+</div>
+
+{% if erro %}
+<div class="alert alert-danger" style="margin-bottom:16px;">{{ erro }}</div>
+{% endif %}
+
+<div class="grid">
+    <div class="card metric-card metric-red">
+        <div class="metric-icon"><i class="bi bi-clock-history"></i></div>
+        <h3>Total pendente</h3>
+        <div class="value">R$ {{ total_pendente|floatformat:2 }}</div>
+        <p>Valores a receber</p>
+    </div>
+
+    <div class="card metric-card metric-green">
+        <div class="metric-icon"><i class="bi bi-check-circle"></i></div>
+        <h3>Total recebido</h3>
+        <div class="value">R$ {{ total_recebido|floatformat:2 }}</div>
+        <p>Valores já quitados</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Nova conta a receber</div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Cliente</label>
+                    <select name="cliente" required>
+                        <option value="">Selecione...</option>
+                        {% for c in clientes %}
+                        <option value="{{ c.id }}">{{ c.nome }} {% if c.telefone %}- {{ c.telefone }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="number" step="0.01" name="valor" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Vencimento</label>
+                    <input type="date" name="vencimento" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top:14px;">
+                <label>Descrição</label>
+                <input type="text" name="descricao" placeholder="Ex: Venda fiado - 2 botijões P13" required>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button type="submit" class="btn btn-success">Registrar conta</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Visão rápida</div>
+
+        <div class="alert alert-success">
+            Registre aqui vendas no fiado e outros valores que clientes devem para a revenda.
+        </div>
+
+        <div class="alert alert-success">
+            Quando o cliente pagar, clique em "Receber" para quitar a conta.
+        </div>
+
+        <div class="alert alert-success">
+            Essas contas aparecem nos relatórios financeiros para controle completo.
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Lista de contas a receber</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Vencimento</th>
+                    <th>Cliente</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Recebido em</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conta in contas %}
+                <tr>
+                    <td>{{ conta.vencimento|date:"d/m/Y" }}</td>
+                    <td>{{ conta.cliente.nome }}</td>
+                    <td>{{ conta.descricao }}</td>
+                    <td>R$ {{ conta.valor|floatformat:2 }}</td>
+                    <td>
+                        {% if conta.status == "pendente" %}
+                            <span class="badge badge-warning">Pendente</span>
+                        {% else %}
+                            <span class="badge badge-success">Recebido</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ conta.recebido_em|date:"d/m/Y H:i"|default:"-" }}</td>
+                    <td>
+                        {% if conta.status == "pendente" %}
+                        <form method="POST" action="/contas-receber/{{ conta.id }}/receber/">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success" title="Marcar como recebido">
+                                <i class="bi bi-check-lg"></i> Receber
+                            </button>
+                        </form>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">Nenhuma conta a receber registrada</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

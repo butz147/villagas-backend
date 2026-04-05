@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .page-title h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 800;
+        color: #1f2937;
+    }
+
+    .page-title p {
+        margin: 6px 0 0;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .badge-soft {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #f3f4f6;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .summary-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .summary-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 8px;
+    }
+
+    .summary-value {
+        font-size: 30px;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1.1;
+    }
+
+    .summary-help {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #6b7280;
+    }
+
+    .panel-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 18px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .panel-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 16px;
+    }
+
+    .search-grid {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) auto auto auto;
+        gap: 10px;
+        align-items: end;
+    }
+
+    .field-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: #374151;
+        margin-bottom: 6px;
+    }
+
+    .field-group input {
+        width: 100%;
+        height: 44px;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        padding: 0 14px;
+        font-size: 14px;
+        outline: none;
+        background: #fff;
+        transition: .2s;
+        box-sizing: border-box;
+    }
+
+    .field-group input:focus {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    }
+
+    .btn-main,
+    .btn-light {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 44px;
+        padding: 0 16px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .btn-main {
+        background: #f59e0b;
+        color: #fff;
+    }
+
+    .btn-main:hover {
+        background: #d97706;
+    }
+
+    .btn-light {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+    }
+
+    .btn-light:hover {
+        background: #e5e7eb;
+    }
+
+    .btn-small {
+        height: 36px;
+        padding: 0 12px;
+        border-radius: 10px;
+        font-size: 13px;
+    }
+
+    .table-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        overflow: hidden;
+        margin-bottom: 18px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .table-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid #e5e7eb;
+        background: #fafafa;
+    }
+
+    .table-title {
+        font-size: 17px;
+        font-weight: 800;
+        color: #111827;
+        margin: 0;
+    }
+
+    .table-count {
+        font-size: 13px;
+        font-weight: 700;
+        color: #6b7280;
+        background: #f3f4f6;
+        padding: 8px 10px;
+        border-radius: 999px;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 980px;
+    }
+
+    thead th {
+        background: #f9fafb;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 800;
+        text-align: left;
+        padding: 14px 16px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #111827;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    tbody tr:hover {
+        background: #fcfcfd;
+    }
+
+    .cliente-nome {
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .cliente-meta {
+        display: block;
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 4px;
+    }
+
+    .muted {
+        color: #6b7280;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .status-ok {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-warn {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .empty-state {
+        padding: 32px 20px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .action-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .paginacao {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        padding: 14px 18px 18px;
+        border-top: 1px solid #e5e7eb;
+        background: #fff;
+    }
+
+    .paginacao a,
+    .paginacao span {
+        font-size: 13px;
+        text-decoration: none;
+    }
+
+    .paginacao a {
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        color: #374151;
+        background: #f9fafb;
+        font-weight: 700;
+    }
+
+    .paginacao a:hover {
+        background: #f3f4f6;
+    }
+
+    .paginacao span {
+        color: #6b7280;
+        font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+        .search-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .page-title h1 {
+            font-size: 24px;
+        }
+
+        .summary-value {
+            font-size: 24px;
+        }
+
+        .search-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="page-header">
+    <div class="page-title">
+        <h1>Clientes</h1>
+        <p>Loja: <strong>{{ loja.nome }}</strong> · Cadastro, consulta rápida e acompanhamento comercial</p>
+    </div>
+
+    <div class="badge-soft">
+        Base de clientes ativa
+    </div>
+</div>
+
+<div class="summary-grid">
+    <div class="summary-card">
+        <div class="summary-label">Total encontrado</div>
+        <div class="summary-value">{{ total_clientes }}</div>
+        <div class="summary-help">Clientes localizados com os filtros atuais</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-label">Página atual</div>
+        <div class="summary-value">{{ clientes.number }}</div>
+        <div class="summary-help">De {{ clientes.paginator.num_pages }} página(s)</div>
+    </div>
+</div>
+
+<div class="panel-card">
+    <div class="panel-title">Buscar clientes</div>
+
+    <form method="get">
+        <div class="search-grid">
+            <div class="field-group">
+               <label>Busca geral</label>
+               <input type="text" name="q" placeholder="Nome, telefone, endereço ou observações..." value="{{ busca }}">
+            </div>
+
+            <button type="submit" class="btn-main">Buscar</button>
+            <a href="{% url 'lista_clientes' %}" class="btn-light">Limpar</a>
+            <a href="{% url 'clientes_excel' %}?q={{ busca }}{% if mostrar_inativos %}&inativos=1{% endif %}" class="btn-light">Exportar Excel</a>
+            <a href="{% url 'novo_cliente' %}" class="btn-light">Novo cliente</a>
+        </div>
+    </form>
+</div>
+
+<div class="table-card">
+    <div class="table-header">
+        <h3 class="table-title">Lista de clientes</h3>
+        <div class="table-count">{{ total_clientes }} registro(s)</div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Telefone</th>
+                    <th>Endereço</th>
+                    <th>Observações</th>
+                    <th>Último contato</th>
+                    <th>Comercial</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in clientes %}
+                <tr>
+                    <td>
+                        <span class="cliente-nome">{{ cliente.nome }}</span>
+                        <span class="cliente-meta">ID #{{ cliente.id }}</span>
+                    </td>
+
+                    <td>
+                        {% if cliente.telefone %}
+                            {{ cliente.telefone }}
+                        {% else %}
+                            <span class="muted">-</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if cliente.ativo %}
+                            <span class="status-pill status-ok">Ativo</span>
+                        {% else %}
+                            <span class="status-pill status-warn">Inativo</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if cliente.endereco %}
+                            {{ cliente.endereco }}
+                        {% else %}
+                            <span class="muted">-</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if cliente.observacoes %}
+                            {{ cliente.observacoes }}
+                        {% else %}
+                            <span class="muted">-</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if cliente.ultimo_contato %}
+                            <span class="status-pill status-ok">{{ cliente.ultimo_contato|date:"d/m/Y" }}</span>
+                        {% else %}
+                            <span class="status-pill status-warn">Sem contato</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if cliente.observacao_comercial %}
+                            {{ cliente.observacao_comercial }}
+                        {% else %}
+                            <span class="muted">-</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <div class="action-group">
+                            <a href="{% url 'historico_cliente' cliente.id %}" class="btn-light btn-small">Histórico</a>
+                            <a href="{% url 'editar_cliente' cliente.id %}" class="btn-light btn-small">Editar</a>
+                            <form method="post" action="{% url 'inativar_cliente' cliente.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-light btn-small">Inativar</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="empty-state">Nenhum cliente encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if clientes.paginator.num_pages > 1 %}
+    <div class="paginacao">
+        {% if clientes.has_previous %}
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}page=1">Primeira</a>
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}page={{ clientes.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span>Página {{ clientes.number }} de {{ clientes.paginator.num_pages }}</span>
+
+        {% if clientes.has_next %}
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}page={{ clientes.next_page_number }}">Próxima</a>
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}page={{ clientes.paginator.num_pages }}">Última</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

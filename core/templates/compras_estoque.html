@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Compras de Estoque{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Compras de Estoque</h1>
+    <p>Registre chegadas de carga e acompanhe aprovações.</p>
+</div>
+
+<form method="GET" class="search-bar">
+    <select name="status">
+        <option value="">Todos os status</option>
+        <option value="pendente" {% if status == "pendente" %}selected{% endif %}>Pendente</option>
+        <option value="aprovada" {% if status == "aprovada" %}selected{% endif %}>Aprovada</option>
+    </select>
+
+    <input type="text" name="fornecedor" placeholder="Buscar por fornecedor..." value="{{ fornecedor }}">
+
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+</form>
+
+{% if erro %}
+    <div class="alert alert-error">
+        {{ erro }}
+    </div>
+{% endif %}
+
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Registrar chegada de compra</div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Produto</label>
+                    <select name="produto" required>
+                        {% for produto in produtos %}
+                        <option value="{{ produto.id }}">
+                            {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                                {{ produto.nome }} | cheio: {{ produto.estoque_cheio }} | vazio: {{ produto.estoque_vazio }} | custo atual: R$ {{ produto.custo_unitario }}
+                            {% else %}
+                                {{ produto.nome }} | cheio: {{ produto.estoque_cheio }} | vazio: {{ produto.estoque_vazio }}
+                            {% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Fornecedor</label>
+                    <input type="text" name="fornecedor">
+                </div>
+
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" name="quantidade" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de compra</label>
+                    <select name="tipo_compra" required>
+                        <option value="troca">Troca de vazio por cheio</option>
+                        <option value="somente_cheio">Somente entrada de cheio</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top:14px;">
+                <label>Observações</label>
+                <textarea name="observacoes"></textarea>
+            </div>
+
+            <div style="margin-top:18px;">
+                <button type="submit" class="btn btn-success">Salvar compra pendente</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Como funciona</div>
+
+        <div class="alert alert-success">
+            <strong>Troca:</strong> entra cheio e sai vazio.
+        </div>
+
+        <div class="alert alert-success">
+            <strong>Somente cheio:</strong> entra cheio e o vazio não muda.
+        </div>
+
+        <div class="alert alert-success">
+            Funcionário ou gerente registra a chegada.
+        </div>
+
+        <div class="alert alert-success">
+            Só na aprovação do admin o estoque entra oficialmente e o custo médio é atualizado.
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Últimas Compras</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Produto</th>
+                    <th>Fornecedor</th>
+                    <th>Quantidade</th>
+                    <th>Tipo de compra</th>
+                    <th>Status</th>
+
+                    {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                        <th>Custo unitário</th>
+                        <th>Custo total</th>
+                    {% endif %}
+
+                    <th>Registrado por</th>
+                    <th>Aprovado por</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for compra in compras %}
+                <tr>
+                    <td>{{ compra.data|date:"d/m/Y H:i" }}</td>
+                    <td>{{ compra.produto.nome }}</td>
+                    <td>{{ compra.fornecedor|default:"-" }}</td>
+                    <td>{{ compra.quantidade }}</td>
+                    <td>{{ compra.get_tipo_compra_display }}</td>
+                    <td>
+                        {% if compra.status == "pendente" %}
+                            <span class="badge badge-low">Pendente</span>
+                        {% else %}
+                            <span class="badge badge-ok">Aprovada</span>
+                        {% endif %}
+                    </td>
+
+                    {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                        <td>
+                            {% if compra.custo_unitario_compra %}
+                                R$ {{ compra.custo_unitario_compra }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if compra.custo_total %}
+                                R$ {{ compra.custo_total }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    {% endif %}
+
+                    <td>
+                        {% if compra.registrado_por %}
+                            {{ compra.registrado_por.username }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if compra.aprovado_por %}
+                            {{ compra.aprovado_por.username }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if compra.status == "pendente" and request.user.perfilusuario.tipo_usuario == "admin" %}
+                            <a class="btn btn-success" href="/compras-estoque/{{ compra.id }}/aprovar/">Aprovar</a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10">Nenhuma compra registrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

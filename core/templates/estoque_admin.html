@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Estoque Administrativo{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Estoque Administrativo</h1>
+    <p>Loja: {{ loja.nome }} | Visão consolidada do estoque</p>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-yellow">
+        <div class="metric-icon"><i class="bi bi-box-seam-fill"></i></div>
+        <h3>Total cheio</h3>
+        <div class="value">{{ total_cheio }}</div>
+        <p>Unidades disponíveis</p>
+    </div>
+
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon"><i class="bi bi-archive-fill"></i></div>
+        <h3>Total vazio</h3>
+        <div class="value">{{ total_vazio }}</div>
+        <p>Cascos disponíveis</p>
+    </div>
+
+    <div class="card metric-card metric-red">
+        <div class="metric-icon"><i class="bi bi-hourglass-split"></i></div>
+        <h3>Compras pendentes</h3>
+        <div class="value">{{ total_pendencias }}</div>
+        <p>Aguardando aprovação</p>
+    </div>
+
+    <div class="card metric-card metric-green">
+        <div class="metric-icon"><i class="bi bi-arrow-repeat"></i></div>
+        <h3>Retornáveis</h3>
+        <div class="value">{{ produtos_retornaveis }}</div>
+        <p>Produtos com cheio e vazio</p>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card metric-card metric-cream">
+        <div class="metric-icon"><i class="bi bi-box"></i></div>
+        <h3>Simples</h3>
+        <div class="value">{{ produtos_simples }}</div>
+        <p>Produtos sem retorno</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Visão completa do estoque</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Tipo</th>
+                    <th>Cheio</th>
+                    <th>Vazio</th>
+                    <th>Total visível</th>
+                    <th>Alerta mínimo</th>
+
+                    {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                        <th>Custo unitário</th>
+                    {% endif %}
+
+                    <th>Status</th>
+                    <th>Compras pendentes</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in lista_estoque %}
+                <tr>
+                    <td>{{ item.produto.nome }}</td>
+
+                    <td>
+                        {% if item.produto.controla_retorno %}
+                            <span class="badge badge-ok">Retornável</span>
+                        {% else %}
+                            <span class="badge badge-info">Simples</span>
+                        {% endif %}
+                    </td>
+
+                    <td>{{ item.estoque_cheio }}</td>
+
+                    <td>
+                        {% if item.produto.controla_retorno %}
+                            {{ item.estoque_vazio }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>{{ item.estoque_total }}</td>
+                    <td>{{ item.alerta_minimo }}</td>
+
+                    {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                        <td>R$ {{ item.custo_unitario }}</td>
+                    {% endif %}
+
+                    <td>
+                        {% if item.status_estoque == "OK" %}
+                            <span class="badge badge-ok">OK</span>
+                        {% elif item.status_estoque == "Baixo" %}
+                            <span class="badge badge-low">Baixo</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ item.status_estoque }}</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if item.compras_pendentes > 0 %}
+                            <span class="badge badge-danger">{{ item.compras_pendentes }}</span>
+                        {% else %}
+                            <span class="badge badge-ok">0</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <a class="btn btn-primary" href="/movimentacao-estoque/">Movimentar</a>
+                        <a class="btn btn-success" href="/compras-estoque/">Compras</a>
+                        <a class="btn btn-secondary" href="/produto/{{ item.produto.id }}/historico/">Histórico</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10">Nenhum produto encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="section-title">Leitura operacional</div>
+
+    <div class="alert alert-success">
+        Produtos retornáveis trabalham com estoque cheio e vazio.
+    </div>
+
+    <div class="alert alert-success">
+        Compra do tipo troca entra cheio e baixa vazio.
+    </div>
+
+    <div class="alert alert-success">
+        Compra do tipo somente cheio entra no cheio e não mexe no vazio.
+    </div>
+</div>
+{% endblock %}

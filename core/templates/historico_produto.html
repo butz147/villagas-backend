@@ -1,0 +1,806 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico do Produto{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .page-title h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 800;
+        color: #1f2937;
+    }
+
+    .page-title p {
+        margin: 6px 0 0;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .badge-soft {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #f3f4f6;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .summary-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .summary-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 8px;
+    }
+
+    .summary-value {
+        font-size: 30px;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1.1;
+    }
+
+    .summary-help {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #6b7280;
+    }
+
+    .panel-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 18px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .panel-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 16px;
+    }
+
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+    }
+
+    .field-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: #374151;
+        margin-bottom: 6px;
+    }
+
+    .field-group input,
+    .field-group select {
+        width: 100%;
+        height: 42px;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        padding: 0 12px;
+        font-size: 14px;
+        outline: none;
+        background: #fff;
+        transition: .2s;
+        box-sizing: border-box;
+    }
+
+    .field-group input:focus,
+    .field-group select:focus {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+
+    .btn-main,
+    .btn-light {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 42px;
+        padding: 0 16px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-main {
+        background: #f59e0b;
+        color: #fff;
+    }
+
+    .btn-main:hover {
+        background: #d97706;
+    }
+
+    .btn-light {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+    }
+
+    .btn-light:hover {
+        background: #e5e7eb;
+    }
+
+    .section-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .section-tab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 14px;
+        border-radius: 999px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 700;
+        border: 1px solid #e5e7eb;
+        color: #4b5563;
+        background: #fff;
+    }
+
+    .section-tab.active {
+        background: #111827;
+        color: #fff;
+        border-color: #111827;
+    }
+
+    .table-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        overflow: hidden;
+        margin-bottom: 18px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .table-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid #e5e7eb;
+        background: #fafafa;
+    }
+
+    .table-title {
+        font-size: 17px;
+        font-weight: 800;
+        color: #111827;
+        margin: 0;
+    }
+
+    .table-count {
+        font-size: 13px;
+        font-weight: 700;
+        color: #6b7280;
+        background: #f3f4f6;
+        padding: 8px 10px;
+        border-radius: 999px;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+    }
+
+    thead th {
+        background: #f9fafb;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 800;
+        text-align: left;
+        padding: 14px 16px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #111827;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    tbody tr:hover {
+        background: #fcfcfd;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .status-ok {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-warn {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .empty-state {
+        padding: 30px 20px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .muted {
+        color: #6b7280;
+    }
+
+    .paginacao {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        padding: 14px 18px 18px;
+        border-top: 1px solid #e5e7eb;
+        background: #fff;
+    }
+
+    .paginacao a,
+    .paginacao span {
+        font-size: 13px;
+        text-decoration: none;
+    }
+
+    .paginacao a {
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        color: #374151;
+        background: #f9fafb;
+        font-weight: 700;
+    }
+
+    .paginacao a:hover {
+        background: #f3f4f6;
+    }
+
+    .paginacao span {
+        color: #6b7280;
+        font-weight: 700;
+    }
+
+    @media (max-width: 768px) {
+        .page-title h1 {
+            font-size: 24px;
+        }
+
+        .summary-value {
+            font-size: 24px;
+        }
+    }
+</style>
+
+<div class="page-header">
+    <div class="page-title">
+        <h1>Histórico do produto</h1>
+        <p>Loja: <strong>{{ loja.nome }}</strong> · Produto: <strong>{{ produto.nome }}</strong></p>
+    </div>
+
+    <div class="badge-soft">
+        {% if produto.controla_retorno %}
+            Produto retornável
+        {% else %}
+            Produto simples
+        {% endif %}
+    </div>
+</div>
+
+<div class="summary-grid">
+    <div class="summary-card">
+        <div class="summary-label">Estoque cheio</div>
+        <div class="summary-value">{{ produto.estoque_cheio }}</div>
+        <div class="summary-help">Quantidade disponível no momento</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-label">Estoque vazio</div>
+        <div class="summary-value">{{ produto.estoque_vazio }}</div>
+        <div class="summary-help">Vasilhames ou retorno disponível</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-label">Movimentações</div>
+        <div class="summary-value">{{ total_movimentacoes }}</div>
+        <div class="summary-help">{{ quantidade_movimentada|default:0 }} unidades no filtro</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-label">Compras</div>
+        <div class="summary-value">{{ total_compras }}</div>
+        <div class="summary-help">{{ quantidade_comprada|default:0 }} unidades compradas</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-label">Vendas</div>
+        <div class="summary-value">{{ total_vendas }}</div>
+        <div class="summary-help">{{ quantidade_vendida|default:0 }} unidades vendidas</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-label">Faturamento</div>
+        <div class="summary-value">R$ {{ valor_total_vendas|default:0 }}</div>
+        <div class="summary-help">Total das vendas dentro do filtro</div>
+    </div>
+</div>
+
+<div class="panel-card">
+    <div class="panel-title">Filtros avançados</div>
+
+    <form method="get">
+        <div class="filter-grid">
+            <div class="field-group">
+                <label>Período</label>
+                <select name="filtro" id="id_filtro_periodo">
+                    <option value="hoje" {% if filtro == "hoje" %}selected{% endif %}>Hoje</option>
+                    <option value="7dias" {% if filtro == "7dias" %}selected{% endif %}>Últimos 7 dias</option>
+                    <option value="30dias" {% if filtro == "30dias" %}selected{% endif %}>Últimos 30 dias</option>
+                    <option value="mes" {% if filtro == "mes" %}selected{% endif %}>Este mês</option>
+                    <option value="personalizado" {% if filtro == "personalizado" %}selected{% endif %}>Personalizado</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label>Data inicial</label>
+                <input type="date" name="data_inicial" value="{{ data_inicial|date:'Y-m-d' }}">
+            </div>
+
+            <div class="field-group">
+                <label>Data final</label>
+                <input type="date" name="data_final" value="{{ data_final|date:'Y-m-d' }}">
+            </div>
+
+            <div class="field-group">
+                <label>Seção</label>
+                <select name="secao">
+                    <option value="" {% if not secao %}selected{% endif %}>Tudo</option>
+                    <option value="movimentacoes" {% if secao == "movimentacoes" %}selected{% endif %}>Movimentações</option>
+                    <option value="compras" {% if secao == "compras" %}selected{% endif %}>Compras</option>
+                    <option value="vendas" {% if secao == "vendas" %}selected{% endif %}>Vendas</option>
+                    <option value="inventarios" {% if secao == "inventarios" %}selected{% endif %}>Inventários</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label>Busca geral</label>
+                <input type="text" name="busca" value="{{ busca }}" placeholder="cliente, fornecedor, motivo, usuário...">
+            </div>
+
+            <div class="field-group">
+                <label>Tipo movimentação</label>
+                <select name="tipo_movimentacao">
+                    <option value="">Todos</option>
+                    {% for valor, label in tipos_movimentacao %}
+                        <option value="{{ valor }}" {% if tipo_movimentacao == valor %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label>Usuário da movimentação</label>
+                <input type="text" name="usuario" value="{{ usuario_filtro }}" placeholder="Usuário">
+            </div>
+
+            <div class="field-group">
+                <label>Status da compra</label>
+                <select name="status_compra">
+                    <option value="">Todos</option>
+                    {% for valor, label in status_compra_choices %}
+                        <option value="{{ valor }}" {% if status_compra == valor %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label>Tipo de compra</label>
+                <select name="tipo_compra">
+                    <option value="">Todos</option>
+                    {% for valor, label in tipos_compra %}
+                        <option value="{{ valor }}" {% if tipo_compra == valor %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label>Fornecedor</label>
+                <input type="text" name="fornecedor" value="{{ fornecedor }}" placeholder="Fornecedor">
+            </div>
+
+            <div class="field-group">
+                <label>Status da venda</label>
+                <select name="status_venda">
+                    <option value="">Todos</option>
+                    {% for valor, label in status_venda_choices %}
+                        <option value="{{ valor }}" {% if status_venda == valor %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label>Tipo de venda</label>
+                <select name="tipo_venda">
+                    <option value="">Todos</option>
+                    {% for valor, label in tipos_venda %}
+                        <option value="{{ valor }}" {% if tipo_venda == valor %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label>Cliente</label>
+                <input type="text" name="cliente" value="{{ cliente_filtro }}" placeholder="Cliente">
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn-main">Aplicar filtros</button>
+            <a href="" class="btn-light">Limpar filtros</a>
+        </div>
+    </form>
+</div>
+
+<div class="section-tabs">
+    <a class="section-tab {% if not secao %}active{% endif %}" href="?{{ querystring_base }}">Tudo</a>
+    <a class="section-tab {% if secao == 'movimentacoes' %}active{% endif %}" href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}secao=movimentacoes">Movimentações</a>
+    <a class="section-tab {% if secao == 'compras' %}active{% endif %}" href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}secao=compras">Compras</a>
+    <a class="section-tab {% if secao == 'vendas' %}active{% endif %}" href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}secao=vendas">Vendas</a>
+    <a class="section-tab {% if secao == 'inventarios' %}active{% endif %}" href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}secao=inventarios">Inventários</a>
+</div>
+
+{% if not secao or secao == "movimentacoes" %}
+<div class="table-card">
+    <div class="table-header">
+        <h3 class="table-title">Movimentações de estoque</h3>
+        <div class="table-count">{{ total_movimentacoes }} registro(s)</div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Quantidade</th>
+                    <th>Usuário</th>
+                    <th>Motivo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimentacoes %}
+                <tr>
+                    <td>{{ mov.data_movimentacao|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if mov.tipo == "entrada" %}
+                            <span class="status-pill status-ok">{{ mov.get_tipo_display }}</span>
+                        {% elif mov.tipo == "saida" %}
+                            <span class="status-pill status-danger">{{ mov.get_tipo_display }}</span>
+                        {% else %}
+                            <span class="status-pill status-warn">{{ mov.get_tipo_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ mov.quantidade }}</td>
+                    <td>{{ mov.usuario.username }}</td>
+                    <td>{{ mov.motivo|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="empty-state">Nenhuma movimentação encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if movimentacoes.paginator.num_pages > 1 %}
+    <div class="paginacao">
+        {% if movimentacoes.has_previous %}
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}mov_page=1">Primeira</a>
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}mov_page={{ movimentacoes.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span>Página {{ movimentacoes.number }} de {{ movimentacoes.paginator.num_pages }}</span>
+
+        {% if movimentacoes.has_next %}
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}mov_page={{ movimentacoes.next_page_number }}">Próxima</a>
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}mov_page={{ movimentacoes.paginator.num_pages }}">Última</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if not secao or secao == "compras" %}
+<div class="table-card">
+    <div class="table-header">
+        <h3 class="table-title">Compras do produto</h3>
+        <div class="table-count">{{ total_compras }} registro(s)</div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Fornecedor</th>
+                    <th>Quantidade</th>
+                    <th>Tipo</th>
+                    <th>Status</th>
+                    {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                        <th>Custo unitário</th>
+                        <th>Custo total</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for compra in compras %}
+                <tr>
+                    <td>{{ compra.data|date:"d/m/Y H:i" }}</td>
+                    <td>{{ compra.fornecedor|default:"-" }}</td>
+                    <td>{{ compra.quantidade }}</td>
+                    <td>{{ compra.get_tipo_compra_display }}</td>
+                    <td>
+                        {% if compra.status == "aprovada" %}
+                            <span class="status-pill status-ok">{{ compra.get_status_display }}</span>
+                        {% else %}
+                            <span class="status-pill status-warn">{{ compra.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    {% if request.user.perfilusuario.tipo_usuario == "admin" %}
+                        <td>
+                            {% if compra.custo_unitario_compra %}
+                                R$ {{ compra.custo_unitario_compra }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if compra.custo_total %}
+                                R$ {{ compra.custo_total }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="empty-state">Nenhuma compra encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if compras.paginator.num_pages > 1 %}
+    <div class="paginacao">
+        {% if compras.has_previous %}
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}comp_page=1">Primeira</a>
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}comp_page={{ compras.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span>Página {{ compras.number }} de {{ compras.paginator.num_pages }}</span>
+
+        {% if compras.has_next %}
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}comp_page={{ compras.next_page_number }}">Próxima</a>
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}comp_page={{ compras.paginator.num_pages }}">Última</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if not secao or secao == "vendas" %}
+<div class="table-card">
+    <div class="table-header">
+        <h3 class="table-title">Vendas do produto</h3>
+        <div class="table-count">{{ total_vendas }} registro(s)</div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Quantidade</th>
+                    <th>Tipo</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venda in vendas %}
+                <tr>
+                    <td>{{ venda.data_venda|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if venda.cliente %}
+                            {{ venda.cliente.nome }}
+                        {% else %}
+                            <span class="muted">Sem cliente</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ venda.quantidade }}</td>
+                    <td>{{ venda.get_tipo_venda_display }}</td>
+                    <td>
+                        {% if venda.status == "ativa" %}
+                            <span class="status-pill status-ok">{{ venda.get_status_display }}</span>
+                        {% else %}
+                            <span class="status-pill status-danger">{{ venda.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>R$ {{ venda.total_venda }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="empty-state">Nenhuma venda encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if vendas.paginator.num_pages > 1 %}
+    <div class="paginacao">
+        {% if vendas.has_previous %}
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}venda_page=1">Primeira</a>
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}venda_page={{ vendas.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span>Página {{ vendas.number }} de {{ vendas.paginator.num_pages }}</span>
+
+        {% if vendas.has_next %}
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}venda_page={{ vendas.next_page_number }}">Próxima</a>
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}venda_page={{ vendas.paginator.num_pages }}">Última</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if not secao or secao == "inventarios" %}
+<div class="table-card">
+    <div class="table-header">
+        <h3 class="table-title">Inventários relacionados</h3>
+        <div class="table-count">{{ total_inventarios|default:0 }} registro(s)</div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Cheio sistema</th>
+                    <th>Cheio contado</th>
+                    <th>Diferença cheio</th>
+                    <th>Vazio sistema</th>
+                    <th>Vazio contado</th>
+                    <th>Diferença vazio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in inventarios %}
+                <tr>
+                    <td>{{ item.inventario.data|date:"d/m/Y H:i" }}</td>
+                    <td>{{ item.estoque_cheio_sistema }}</td>
+                    <td>{{ item.estoque_cheio_contado }}</td>
+                    <td>{{ item.diferenca_cheio }}</td>
+                    <td>{{ item.estoque_vazio_sistema }}</td>
+                    <td>{{ item.estoque_vazio_contado }}</td>
+                    <td>{{ item.diferenca_vazio }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="empty-state">Nenhum inventário encontrado para este produto.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if inventarios.paginator.num_pages > 1 %}
+    <div class="paginacao">
+        {% if inventarios.has_previous %}
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}inv_page=1">Primeira</a>
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}inv_page={{ inventarios.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span>Página {{ inventarios.number }} de {{ inventarios.paginator.num_pages }}</span>
+
+        {% if inventarios.has_next %}
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}inv_page={{ inventarios.next_page_number }}">Próxima</a>
+            <a href="?{{ querystring_base }}{% if querystring_base %}&{% endif %}inv_page={{ inventarios.paginator.num_pages }}">Última</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<script>
+    const filtroPeriodo = document.getElementById("id_filtro_periodo");
+    const dataInicial = document.querySelector('input[name="data_inicial"]');
+    const dataFinal = document.querySelector('input[name="data_final"]');
+
+    function atualizarCamposData() {
+        const personalizado = filtroPeriodo.value === "personalizado";
+        dataInicial.disabled = !personalizado;
+        dataFinal.disabled = !personalizado;
+    }
+
+    if (filtroPeriodo) {
+        filtroPeriodo.addEventListener("change", atualizarCamposData);
+        atualizarCamposData();
+    }
+</script>
+{% endblock %}

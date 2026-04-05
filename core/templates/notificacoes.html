@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Notificações</h1>
+    {% if nao_lidas > 0 %}
+    <form method="post" style="display:inline;">{% csrf_token %}
+        <input type="hidden" name="acao" value="marcar_todas">
+        <button type="submit" class="btn btn-secondary">Marcar todas como lidas</button>
+    </form>
+    {% endif %}
+</div>
+
+{% for msg in messages %}
+<div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+{% endfor %}
+
+<div class="metric-grid">
+    <div class="metric-card">
+        <div class="metric-value">{{ nao_lidas }}</div>
+        <div class="metric-label">Não Lidas</div>
+    </div>
+</div>
+
+<div class="table-card">
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Título</th>
+                <th>Mensagem</th>
+                <th>Data</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for n in notificacoes %}
+            <tr style="{% if not n.lida %}background:#fff9e6;font-weight:bold;{% endif %}">
+                <td>
+                    {% if n.tipo == "info" %}<span class="badge badge-info">Info</span>
+                    {% elif n.tipo == "alerta" %}<span class="badge badge-warning">Alerta</span>
+                    {% elif n.tipo == "urgente" %}<span class="badge badge-danger">Urgente</span>
+                    {% else %}<span class="badge badge-success">Sucesso</span>{% endif %}
+                </td>
+                <td>{{ n.titulo }}</td>
+                <td>{{ n.mensagem|default:"-" }}</td>
+                <td>{{ n.criado_em|date:"d/m/Y H:i" }}</td>
+                <td>
+                    {% if not n.lida %}
+                    <form method="post" style="display:inline;">{% csrf_token %}
+                        <input type="hidden" name="acao" value="marcar_lida">
+                        <input type="hidden" name="notif_id" value="{{ n.id }}">
+                        <button type="submit" class="btn btn-sm btn-primary">Marcar lida</button>
+                    </form>
+                    {% endif %}
+                    {% if n.link %}
+                    <a href="{{ n.link }}" class="btn btn-sm btn-secondary">Ver</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;">Nenhuma notificação.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhe do Inventário{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Detalhe do Inventário</h1>
+    <p>Inventário #{{ inventario.id }} | {{ inventario.data|date:"d/m/Y H:i" }}</p>
+</div>
+
+<div class="card">
+    <div class="section-title">Resumo</div>
+
+    <p><strong>Criado por:</strong>
+        {% if inventario.criado_por %}
+            {{ inventario.criado_por.username }}
+        {% else %}
+            -
+        {% endif %}
+    </p>
+
+    <p><strong>Observações:</strong> {{ inventario.observacoes|default:"-" }}</p>
+</div>
+
+<div class="card">
+    <div class="section-title">Itens do inventário</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Cheio sistema</th>
+                    <th>Cheio contado</th>
+                    <th>Diferença cheio</th>
+                    <th>Vazio sistema</th>
+                    <th>Vazio contado</th>
+                    <th>Diferença vazio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in itens %}
+                <tr>
+                    <td>{{ item.produto.nome }}</td>
+                    <td>{{ item.estoque_cheio_sistema }}</td>
+                    <td>{{ item.estoque_cheio_contado }}</td>
+                    <td>
+                        {% if item.diferenca_cheio == 0 %}
+                            <span class="badge badge-ok">0</span>
+                        {% elif item.diferenca_cheio > 0 %}
+                            <span class="badge badge-info">+{{ item.diferenca_cheio }}</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ item.diferenca_cheio }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.estoque_vazio_sistema }}</td>
+                    <td>{{ item.estoque_vazio_contado }}</td>
+                    <td>
+                        {% if item.diferenca_vazio == 0 %}
+                            <span class="badge badge-ok">0</span>
+                        {% elif item.diferenca_vazio > 0 %}
+                            <span class="badge badge-info">+{{ item.diferenca_vazio }}</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ item.diferenca_vazio }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
