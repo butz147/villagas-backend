@@ -642,10 +642,10 @@
     <div class="form-grid">
       <div class="field-group">
         <label>Produto</label>
-        <select name="produto" required>
+        <select name="produto" id="pedido_produto" required>
           <option value="">Selecione</option>
           {% for produto in produtos %}
-            <option value="{{ produto.id }}">{{ produto.nome }}</option>
+            <option value="{{ produto.id }}" data-preco="{{ produto.preco_venda }}">{{ produto.nome }}</option>
           {% endfor %}
         </select>
       </div>
@@ -655,19 +655,29 @@
         <input type="number" name="quantidade" value="1" min="1">
       </div>
 
-      <div class="field-group">
+      <div class="field-group" id="pedido_preco_grupo">
         <label>Preço</label>
-        <input type="text" name="preco_unitario">
+        <input type="text" name="preco_unitario" id="pedido_preco">
+      </div>
+
+      <div class="field-group">
+        <label>Frete</label>
+        <input type="number" step="0.01" name="frete" id="pedido_frete" value="0" min="0">
       </div>
 
       <div class="field-group">
         <label>Pagamento</label>
-        <select name="forma_pagamento">
+        <select name="forma_pagamento" id="pedido_pagamento">
           <option value="dinheiro">Dinheiro</option>
           <option value="pix">Pix</option>
           <option value="credito">Crédito</option>
           <option value="debito">Débito</option>
+          <option value="gas_do_povo">Gás do Povo</option>
         </select>
+      </div>
+
+      <div id="pedido_gas_aviso" style="display:none;background:#e8f5e9;border:1px solid #66bb6a;border-radius:8px;padding:8px 12px;margin:4px 0;color:#2e7d32;font-size:0.85rem;">
+        <strong>Gás do Povo:</strong> valor definido pelo produto no admin.
       </div>
 
       <div class="field-group">
@@ -723,6 +733,38 @@
     <button type="submit" class="btn-main">Criar pedido</button>
   </form>
 </div>
+
+<script>
+(function() {
+  var produtoSel = document.getElementById('pedido_produto');
+  var pagamentoSel = document.getElementById('pedido_pagamento');
+  var precoInput = document.getElementById('pedido_preco');
+  var precoGrupo = document.getElementById('pedido_preco_grupo');
+  var aviso = document.getElementById('pedido_gas_aviso');
+
+  function getPreco() {
+    var opt = produtoSel ? produtoSel.options[produtoSel.selectedIndex] : null;
+    return opt ? (opt.dataset.preco || '') : '';
+  }
+
+  function atualizarPedidoPagamento() {
+    if (!pagamentoSel) return;
+    if (pagamentoSel.value === 'gas_do_povo') {
+      precoInput.value = getPreco();
+      precoInput.readOnly = true;
+      precoGrupo.style.display = 'none';
+      aviso.style.display = 'block';
+    } else {
+      precoInput.readOnly = false;
+      precoGrupo.style.display = '';
+      aviso.style.display = 'none';
+    }
+  }
+
+  if (pagamentoSel) pagamentoSel.addEventListener('change', atualizarPedidoPagamento);
+  if (produtoSel) produtoSel.addEventListener('change', atualizarPedidoPagamento);
+})();
+</script>
 
 <div class="panel-card">
   <div class="painel-toolbar">

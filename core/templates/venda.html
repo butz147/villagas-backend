@@ -34,10 +34,10 @@
 
                 <div class="form-group">
                     <label>Produto</label>
-                    <select name="produto" required>
+                    <select name="produto" id="venda_produto" required>
                         <option value="">Selecione</option>
                         {% for produto in produtos %}
-                            <option value="{{ produto.id }}">
+                            <option value="{{ produto.id }}" data-preco="{{ produto.preco_venda }}">
                                 {{ produto.nome }} | cheio: {{ produto.estoque_cheio }} | vazio: {{ produto.estoque_vazio }}
                             </option>
                         {% endfor %}
@@ -70,40 +70,99 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Forma de pagamento 1</label>
-                    <select name="forma_pagamento_1" required>
+                    <select name="forma_pagamento_1" id="pag1_select" required>
                         <option value="dinheiro">Dinheiro</option>
                         <option value="pix">PIX</option>
                         <option value="credito">Crédito</option>
                         <option value="debito">Débito</option>
+                        <option value="gas_do_povo">Gás do Povo</option>
                     </select>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="pag1_valor_grupo">
                     <label>Valor pago na forma 1</label>
-                    <input type="number" step="0.01" name="valor_pagamento_1" required>
+                    <input type="number" step="0.01" name="valor_pagamento_1" id="pag1_valor" required>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="pag2_grupo">
                     <label>Forma de pagamento 2</label>
-                    <select name="forma_pagamento_2">
+                    <select name="forma_pagamento_2" id="pag2_select">
                         <option value="">Sem segunda forma</option>
                         <option value="dinheiro">Dinheiro</option>
                         <option value="pix">PIX</option>
                         <option value="credito">Crédito</option>
                         <option value="debito">Débito</option>
+                        <option value="gas_do_povo">Gás do Povo</option>
                     </select>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="pag2_valor_grupo">
                     <label>Valor pago na forma 2</label>
-                    <input type="number" step="0.01" name="valor_pagamento_2">
+                    <input type="number" step="0.01" name="valor_pagamento_2" id="pag2_valor">
                 </div>
+            </div>
+
+            <div id="gas_do_povo_aviso" style="display:none;background:#e8f5e9;border:1px solid #66bb6a;border-radius:8px;padding:10px 14px;margin-top:8px;color:#2e7d32;font-size:0.9rem;">
+                <strong>Gás do Povo:</strong> o valor é configurado no produto e será aplicado automaticamente.
             </div>
 
             <div style="margin-top: 20px;">
                 <button type="submit" class="btn btn-success">Salvar venda</button>
             </div>
         </form>
+
+        <script>
+        (function() {
+            var produtoSelect = document.getElementById('venda_produto');
+            var pag1Select = document.getElementById('pag1_select');
+            var pag1Valor = document.getElementById('pag1_valor');
+            var pag1GrupoValor = document.getElementById('pag1_valor_grupo');
+            var pag2Select = document.getElementById('pag2_select');
+            var pag2Valor = document.getElementById('pag2_valor');
+            var pag2GrupoValor = document.getElementById('pag2_valor_grupo');
+            var pag2Grupo = document.getElementById('pag2_grupo');
+            var aviso = document.getElementById('gas_do_povo_aviso');
+
+            function getPrecoSelecionado() {
+                var opt = produtoSelect.options[produtoSelect.selectedIndex];
+                return opt ? (opt.dataset.preco || '') : '';
+            }
+
+            function atualizarPagamento() {
+                var isGasPov1 = pag1Select.value === 'gas_do_povo';
+                var isGasPov2 = pag2Select.value === 'gas_do_povo';
+
+                if (isGasPov1) {
+                    var preco = getPrecoSelecionado();
+                    pag1Valor.value = preco;
+                    pag1Valor.readOnly = true;
+                    pag1GrupoValor.style.display = 'none';
+                    pag2Grupo.style.display = 'none';
+                    pag2GrupoValor.style.display = 'none';
+                    aviso.style.display = 'block';
+                } else {
+                    pag1Valor.readOnly = false;
+                    pag1GrupoValor.style.display = '';
+                    pag2Grupo.style.display = '';
+                    aviso.style.display = (isGasPov2) ? 'block' : 'none';
+
+                    if (isGasPov2) {
+                        var preco = getPrecoSelecionado();
+                        pag2Valor.value = preco;
+                        pag2Valor.readOnly = true;
+                        pag2GrupoValor.style.display = 'none';
+                    } else {
+                        pag2Valor.readOnly = false;
+                        pag2GrupoValor.style.display = '';
+                    }
+                }
+            }
+
+            pag1Select.addEventListener('change', atualizarPagamento);
+            pag2Select.addEventListener('change', atualizarPagamento);
+            produtoSelect.addEventListener('change', atualizarPagamento);
+        })();
+        </script>
     </div>
 
     <div class="card">

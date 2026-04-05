@@ -287,6 +287,14 @@ def registrar_venda(request):
 
         produto = Produto.objects.get(id=produto_id, loja=loja)
 
+        # Gás do Povo: valor definido pelo preco_venda do produto no admin
+        if forma_pagamento_1 == "gas_do_povo":
+            valor_pagamento_1 = str(produto.preco_venda)
+            valor_pagamento_2 = None
+            forma_pagamento_2 = None
+        elif forma_pagamento_2 == "gas_do_povo":
+            valor_pagamento_2 = str(produto.preco_venda)
+
         cliente = None
         if cliente_id:
             cliente = Cliente.objects.get(id=cliente_id, loja=loja)
@@ -806,6 +814,7 @@ def pedidos(request):
             quantidade = int(request.POST.get("quantidade") or 1)
             preco_unitario = request.POST.get("preco_unitario", "").strip()
             forma_pagamento = request.POST.get("forma_pagamento")
+            frete = request.POST.get("frete", "0").strip() or "0"
             observacoes = request.POST.get("observacoes", "").strip()
             entregador_id = request.POST.get("entregador", "").strip()
 
@@ -819,6 +828,10 @@ def pedidos(request):
                     "status_choices": status_choices,
                     "erro": "Produto não encontrado."
                 })
+
+            # Gás do Povo: preço vem do produto, não do formulário
+            if forma_pagamento == "gas_do_povo":
+                preco_unitario = str(produto.preco_venda)
 
             if not preco_unitario:
                 return render(request, "pedidos.html", {
@@ -894,6 +907,7 @@ def pedidos(request):
                 entregador=entregador,
                 quantidade=quantidade,
                 preco_unitario=preco_unitario,
+                frete=Decimal(frete),
                 forma_pagamento=forma_pagamento,
                 status="novo",
                 observacoes=observacoes,
