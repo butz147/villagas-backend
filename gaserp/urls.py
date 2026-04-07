@@ -56,6 +56,7 @@ from core.views import (
     # vale gás e comodato
     vale_gas,
     comodatos,
+    comodato_pdf,
 
     # veículos
     veiculos,
@@ -171,6 +172,7 @@ urlpatterns = [
     # vale gás e comodato
     path('vale-gas/', vale_gas),
     path('comodatos/', comodatos),
+    path('comodatos/<int:comodato_id>/pdf/', comodato_pdf),
 
     # veículos
     path('veiculos/', veiculos),

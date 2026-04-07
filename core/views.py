@@ -4095,6 +4095,118 @@ def comodatos(request):
     })
 
 
+@login_required
+def comodato_pdf(request, comodato_id):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.units import cm
+
+    loja = obter_loja_usuario(request.user)
+    if not loja:
+        return render(request, "erro_loja.html")
+
+    comodato = get_object_or_404(Comodato, id=comodato_id, loja=loja)
+    cliente = comodato.cliente
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="comodato_{comodato.id}.pdf"'
+
+    p = canvas.Canvas(response, pagesize=A4)
+    largura, altura = A4
+
+    def linha(y, texto, tamanho=11, negrito=False):
+        if negrito:
+            p.setFont("Helvetica-Bold", tamanho)
+        else:
+            p.setFont("Helvetica", tamanho)
+        p.drawString(2 * cm, y, texto)
+
+    y = altura - 2 * cm
+
+    # Cabeçalho
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(2 * cm, y, loja.nome)
+    y -= 0.7 * cm
+    p.setFont("Helvetica", 10)
+    p.drawString(2 * cm, y, loja.endereco or "")
+    y -= 1.2 * cm
+
+    # Título
+    p.setFont("Helvetica-Bold", 14)
+    p.drawCentredString(largura / 2, y, "CONTRATO DE COMODATO DE BOTIJÃO")
+    y -= 0.5 * cm
+    p.setLineWidth(1.5)
+    p.line(2 * cm, y, largura - 2 * cm, y)
+    y -= 0.8 * cm
+
+    # Dados do comodato
+    linha(y, f"Nº do Contrato: {comodato.id:04d}    |    Data: {comodato.data_saida.strftime('%d/%m/%Y')}", negrito=True)
+    y -= 0.7 * cm
+
+    linha(y, "COMODANTE (Empresa):", negrito=True)
+    y -= 0.5 * cm
+    linha(y, f"  {loja.nome}  —  {loja.endereco or ''}")
+    y -= 0.8 * cm
+
+    linha(y, "COMODATÁRIO (Cliente):", negrito=True)
+    y -= 0.5 * cm
+    linha(y, f"  Nome: {cliente.nome}")
+    y -= 0.45 * cm
+    linha(y, f"  Telefone: {cliente.telefone or '-'}    CPF: {cliente.cpf_cnpj or '-'}")
+    y -= 0.45 * cm
+    linha(y, f"  Endereço: {cliente.endereco or '-'}")
+    y -= 0.8 * cm
+
+    linha(y, "ITEM CEDIDO EM COMODATO:", negrito=True)
+    y -= 0.5 * cm
+    item_display = dict(comodato.ITEM_CHOICES).get(comodato.item, comodato.item)
+    linha(y, f"  {item_display}    Quantidade: {comodato.quantidade} unidade(s)")
+    y -= 0.8 * cm
+
+    # Cláusulas
+    linha(y, "CLÁUSULAS:", negrito=True)
+    y -= 0.5 * cm
+
+    clausulas = [
+        "1. O COMODATÁRIO recebe o(s) botijão(ões) acima identificado(s) em regime de comodato, ou seja,",
+        "   a título gratuito e com obrigação de devolvê-lo(s) nas mesmas condições recebidas.",
+        "2. O COMODATÁRIO é responsável pela guarda, conservação e uso correto do botijão durante o período",
+        "   em que estiver sob sua posse.",
+        "3. Em caso de perda, roubo, dano ou deterioração do botijão, o COMODATÁRIO se compromete a",
+        "   ressarcir o COMODANTE pelo valor de reposição do bem.",
+        "4. O COMODANTE poderá solicitar a devolução do botijão a qualquer momento, mediante aviso prévio.",
+        "5. O botijão é de propriedade exclusiva do COMODANTE e não poderá ser alienado, empenhado ou",
+        "   cedido pelo COMODATÁRIO a terceiros sem autorização expressa.",
+    ]
+
+    for cl in clausulas:
+        linha(y, cl, tamanho=10)
+        y -= 0.45 * cm
+
+    if comodato.observacoes:
+        y -= 0.3 * cm
+        linha(y, f"Observações: {comodato.observacoes}", tamanho=10)
+        y -= 0.5 * cm
+
+    # Assinaturas
+    y -= 1.0 * cm
+    p.setLineWidth(0.5)
+    p.line(2 * cm, y, 9 * cm, y)
+    p.line(11 * cm, y, 18 * cm, y)
+    y -= 0.4 * cm
+    p.setFont("Helvetica", 9)
+    p.drawString(2 * cm, y, "Assinatura do Comodante")
+    p.drawString(11 * cm, y, "Assinatura do Comodatário")
+    y -= 0.8 * cm
+    p.setFont("Helvetica", 9)
+    p.drawString(2 * cm, y, f"Data: ___/___/______")
+    p.drawString(11 * cm, y, f"Data: ___/___/______")
+
+    p.showPage()
+    p.save()
+    return response
+
+
 # ===================== CONTAS A RECEBER =====================
 
 @login_required

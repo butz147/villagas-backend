@@ -527,9 +527,15 @@ class Comodato(models.Model):
         ("perdido", "Perdido"),
     ]
 
+    ITEM_CHOICES = [
+        ("P13", "Botijão P13 (13kg)"),
+        ("P20", "Botijão P20 (20kg)"),
+        ("P45", "Botijão P45 (45kg)"),
+    ]
+
     loja = models.ForeignKey(Loja, on_delete=models.CASCADE)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="comodatos")
-    item = models.CharField(max_length=150)
+    item = models.CharField(max_length=150, choices=ITEM_CHOICES)
     quantidade = models.PositiveIntegerField(default=1)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="ativo")
     observacoes = models.TextField(blank=True)
