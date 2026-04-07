@@ -3452,15 +3452,16 @@ def aprovar_compra_estoque(request, compra_id):
     produto = compra.produto
     quantidade_nova = compra.quantidade
 
-    estoque_atual = produto.estoque_cheio
+    # Estoque já subiu no registro — calcular custo médio corretamente
+    estoque_total = Decimal(produto.estoque_cheio)  # já inclui quantidade_nova
+    estoque_antes = estoque_total - Decimal(quantidade_nova)
     custo_atual = Decimal(produto.custo_unitario or 0)
-    quantidade_total = estoque_atual + quantidade_nova
 
-    if quantidade_total > 0:
+    if estoque_total > 0:
         novo_custo_medio = (
-            (Decimal(estoque_atual) * custo_atual) +
+            (estoque_antes * custo_atual) +
             (Decimal(quantidade_nova) * custo_unitario_compra)
-        ) / Decimal(quantidade_total)
+        ) / estoque_total
     else:
         novo_custo_medio = custo_unitario_compra
 
