@@ -286,6 +286,54 @@
             color:#f7c928;
         }
 
+        .folguista-toggle{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            cursor:pointer;
+            padding:12px 14px;
+            border:2px dashed #e2e8f0;
+            border-radius:12px;
+            transition:all 0.2s;
+            user-select:none;
+        }
+
+        .folguista-toggle:hover{
+            border-color:#f7c928;
+            background:#fffbeb;
+        }
+
+        .folguista-toggle input[type=checkbox]{
+            width:18px;
+            height:18px;
+            accent-color:#f7c928;
+            cursor:pointer;
+            margin:0;
+            padding:0;
+        }
+
+        .folguista-toggle span{
+            font-size:14px;
+            font-weight:600;
+            color:#475569;
+        }
+
+        .folguista-nome-wrap{
+            display:none;
+        }
+
+        .folguista-badge{
+            background:#fff8e1;
+            border:1px solid #f7c928;
+            border-radius:8px;
+            padding:8px 12px;
+            font-size:13px;
+            color:#92681a;
+            display:flex;
+            align-items:center;
+            gap:6px;
+        }
+
         @media (max-width: 900px){
             .login-card{
                 grid-template-columns:1fr;
@@ -370,10 +418,44 @@
                     </div>
                 </div>
 
+                <label class="folguista-toggle">
+                    <input type="checkbox" name="eh_folguista" value="1" id="chk_folguista">
+                    <span><i class="bi bi-person-badge"></i> Entrar como folguista</span>
+                </label>
+
+                <div class="folguista-nome-wrap" id="folguista_nome_wrap">
+                    <div class="folguista-badge" style="margin-bottom:8px;">
+                        <i class="bi bi-info-circle"></i>
+                        Você vai usar o login do titular. Informe seu nome para o registro.
+                    </div>
+                    <div class="input-group">
+                        <label>Nome do folguista</label>
+                        <div class="input-wrap">
+                            <input type="text" name="folguista_nome" id="folguista_nome" placeholder="Ex: João Silva">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="login-btn">
                     <i class="bi bi-box-arrow-in-right"></i> Entrar
                 </button>
             </form>
+
+            <script>
+            document.getElementById('chk_folguista').addEventListener('change', function() {
+                var wrap = document.getElementById('folguista_nome_wrap');
+                var input = document.getElementById('folguista_nome');
+                if (this.checked) {
+                    wrap.style.display = 'block';
+                    input.required = true;
+                } else {
+                    wrap.style.display = 'none';
+                    input.required = false;
+                    input.value = '';
+                }
+            });
+            </script>
 
             <div class="login-footer">
                 <i class="bi bi-shield-lock-fill"></i> VillaGás ERP &bull; Acesso seguro

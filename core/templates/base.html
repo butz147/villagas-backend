@@ -43,6 +43,11 @@
         </div>
         <div>
             <div style="font-weight:700;">{{ request.user.username }}</div>
+            {% if folguista_ativo %}
+            <div style="font-size:11px;background:#f7c928;color:#0a1a42;border-radius:4px;padding:1px 6px;font-weight:700;margin-top:2px;display:inline-block;">
+                <i class="bi bi-person-badge"></i> Folguista: {{ folguista_nome }}
+            </div>
+            {% endif %}
             {% if request.user.is_authenticated %}
             <small style="opacity:0.7;">
                 {% if perfil_ativo.tipo_usuario == "admin" %}Administrador
@@ -128,6 +133,11 @@
             </div>
             <div class="user-info">
                 <div class="user-name">{{ request.user.username }}</div>
+                {% if folguista_ativo %}
+                    <div style="font-size:11px;background:#f7c928;color:#0a1a42;border-radius:4px;padding:1px 7px;font-weight:700;margin-bottom:2px;display:inline-block;">
+                        <i class="bi bi-person-badge"></i> Folguista: {{ folguista_nome }}
+                    </div>
+                {% endif %}
                 {% if request.user.is_authenticated %}
                     <div class="user-role">
                         {% if perfil_ativo.tipo_usuario == "admin" %}

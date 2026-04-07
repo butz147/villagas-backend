@@ -213,11 +213,20 @@ def login_usuario(request):
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
+        eh_folguista = request.POST.get("eh_folguista") == "1"
+        folguista_nome = request.POST.get("folguista_nome", "").strip()
 
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
             login(request, user)
+
+            if eh_folguista and folguista_nome:
+                request.session["folguista_ativo"] = True
+                request.session["folguista_nome"] = folguista_nome
+            else:
+                request.session["folguista_ativo"] = False
+                request.session["folguista_nome"] = ""
 
             if usuario_eh_admin(user):
                 return redirect("/admin-geral/")

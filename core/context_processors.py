@@ -41,4 +41,6 @@ def perfil_ativo(request):
         'perfil_ativo': perfil,
         'loja_ativa': loja_ativa,
         'lojas_usuario': lojas_usuario,
+        'folguista_ativo': request.session.get('folguista_ativo', False),
+        'folguista_nome': request.session.get('folguista_nome', ''),
     }
