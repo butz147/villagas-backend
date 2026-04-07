@@ -1301,6 +1301,25 @@ def pedidos_json(request):
     return JsonResponse({"pedidos": lista})
 
 
+def gerar_comissao_frete(pedido, loja):
+    """Gera comissão de frete fixo ao entregador quando pedido é marcado como Entregue."""
+    entregador = pedido.entregador
+    if not entregador or not entregador.recebe_frete:
+        return
+    if Comissao.objects.filter(pedido=pedido, tipo="frete_fixo").exists():
+        return  # evita duplicata
+    valor_pedido = (pedido.preco_unitario * pedido.quantidade).quantize(Decimal("0.01"))
+    Comissao.objects.create(
+        loja=loja,
+        entregador=entregador,
+        pedido=pedido,
+        tipo="frete_fixo",
+        valor_venda=valor_pedido,
+        percentual=Decimal("0"),
+        valor_comissao=entregador.valor_frete,
+    )
+
+
 @login_required
 def atualizar_status_pedido(request, pedido_id):
     loja = obter_loja_usuario(request.user)
@@ -1334,6 +1353,9 @@ def atualizar_status_pedido(request, pedido_id):
 
     pedido.status = novo_status
     pedido.save()
+
+    if novo_status == "entregue":
+        gerar_comissao_frete(pedido, loja)
 
     registrar_auditoria(
         loja=loja,
@@ -1371,6 +1393,9 @@ def alterar_status_pedido(request, pedido_id, novo_status):
 
     pedido.status = novo_status
     pedido.save()
+
+    if novo_status == "entregue":
+        gerar_comissao_frete(pedido, loja)
 
     registrar_auditoria(
         loja=loja,
@@ -2236,6 +2261,8 @@ def entregar_pedido(request, pedido_id):
 
     pedido.status = "entregue"
     pedido.save()
+
+    gerar_comissao_frete(pedido, loja)
 
     return redirect("/painel-entregador/")
 

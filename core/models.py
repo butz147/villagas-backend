@@ -924,11 +924,17 @@ class Comissao(models.Model):
         ("pago", "Pago"),
     ]
 
+    TIPO_CHOICES = [
+        ("frete_fixo", "Frete Fixo"),
+        ("percentual", "Percentual"),
+    ]
+
     loja = models.ForeignKey(Loja, on_delete=models.CASCADE)
     entregador = models.ForeignKey(Entregador, on_delete=models.CASCADE, related_name="comissoes")
     venda = models.ForeignKey(Venda, on_delete=models.SET_NULL, null=True, blank=True)
     pedido = models.ForeignKey(Pedido, on_delete=models.SET_NULL, null=True, blank=True)
 
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default="frete_fixo")
     valor_venda = models.DecimalField(max_digits=10, decimal_places=2)
     percentual = models.DecimalField(max_digits=5, decimal_places=2)
     valor_comissao = models.DecimalField(max_digits=10, decimal_places=2)
