@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Movimentação de Estoque{% endblock %}
+{% block title %}Correção de Estoque{% endblock %}
 
 {% block content %}
 <div class="topbar">
-    <h1>Movimentação de Estoque</h1>
-    <p>Loja: {{ loja.nome }} | Controle manual de entradas, saídas e ajustes</p>
+    <h1>Correção de Estoque</h1>
+    <p>Loja: {{ loja.nome }} | Ajuste manual de quantidade cheio ou vazio</p>
 </div>
 
 <div class="grid">
@@ -52,8 +52,6 @@
                 <div class="form-group">
                     <label>Tipo</label>
                     <select name="tipo" required>
-                        <option value="entrada">Entrada</option>
-                        <option value="saida">Saída</option>
                         <option value="ajuste_cheio">Ajuste estoque cheio</option>
                         <option value="ajuste_vazio">Ajuste estoque vazio</option>
                     </select>
@@ -119,12 +117,12 @@
                     <td>{{ mov.data_movimentacao|date:"d/m/Y H:i" }}</td>
                     <td>{{ mov.produto.nome }}</td>
                     <td>
-                        {% if mov.tipo == "entrada" %}
+                        {% if mov.tipo == "ajuste_cheio" %}
                             <span class="badge badge-ok">{{ mov.get_tipo_display }}</span>
-                        {% elif mov.tipo == "saida" %}
-                            <span class="badge badge-danger">{{ mov.get_tipo_display }}</span>
-                        {% else %}
+                        {% elif mov.tipo == "ajuste_vazio" %}
                             <span class="badge badge-info">{{ mov.get_tipo_display }}</span>
+                        {% else %}
+                            <span class="badge badge-low">{{ mov.get_tipo_display }}</span>
                         {% endif %}
                     </td>
                     <td>{{ mov.quantidade }}</td>

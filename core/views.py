@@ -724,29 +724,14 @@ def movimentar_estoque(request):
                 "erro": erro,
             })
 
-        if tipo == "entrada":
-            produto.estoque_cheio += quantidade
-
-        elif tipo == "saida":
-            if produto.estoque_cheio < quantidade:
-                erro = "Estoque cheio insuficiente para essa saída."
-                return render(request, "movimentacao_estoque.html", {
-                    "loja": loja,
-                    "produtos": produtos,
-                    "movimentacoes": movimentacoes,
-                    "erro": erro,
-                })
-
-            produto.estoque_cheio -= quantidade
-
-        elif tipo == "ajuste_cheio":
+        if tipo == "ajuste_cheio":
             produto.estoque_cheio = quantidade
 
         elif tipo == "ajuste_vazio":
             produto.estoque_vazio = quantidade
 
         else:
-            erro = "Tipo de movimentação inválido."
+            erro = "Tipo de correção inválido."
             return render(request, "movimentacao_estoque.html", {
                 "loja": loja,
                 "produtos": produtos,
@@ -767,7 +752,7 @@ def movimentar_estoque(request):
         registrar_auditoria(
             loja=loja,
             usuario=request.user,
-            acao="Movimentação de estoque",
+            acao="Correção de estoque",
             descricao=f"Produto: {produto.nome} | Tipo: {tipo} | Quantidade: {quantidade} | Motivo: {motivo}"
         )
         
