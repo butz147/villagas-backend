@@ -645,7 +645,7 @@
         <select name="produto" id="pedido_produto" required>
           <option value="">Selecione</option>
           {% for produto in produtos %}
-            <option value="{{ produto.id }}" data-preco="{{ produto.preco_venda }}" data-frete="{{ produto.frete_entrega }}">{{ produto.nome }}</option>
+            <option value="{{ produto.id }}" data-preco="{{ produto.preco_venda }}" data-preco-gdp="{{ produto.preco_gas_do_povo }}" data-frete="{{ produto.frete_entrega }}">{{ produto.nome }}</option>
           {% endfor %}
         </select>
       </div>
@@ -748,6 +748,7 @@
     var opt = produtoSel ? produtoSel.options[produtoSel.selectedIndex] : null;
     return {
       preco: opt ? (opt.dataset.preco || '') : '',
+      precoGdp: opt ? (opt.dataset.precoGdp || opt.dataset.preco || '') : '',
       frete: opt ? parseFloat(opt.dataset.frete || '0') : 0
     };
   }
@@ -763,7 +764,7 @@
     if (!pagamentoSel) return;
     var data = getOptData();
     if (pagamentoSel.value === 'gas_do_povo') {
-      precoInput.value = data.preco;
+      precoInput.value = data.precoGdp;
       precoInput.readOnly = true;
       precoGrupo.style.display = 'none';
       aviso.style.display = 'block';

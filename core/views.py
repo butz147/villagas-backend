@@ -296,13 +296,13 @@ def registrar_venda(request):
 
         produto = Produto.objects.get(id=produto_id, loja=loja)
 
-        # Gás do Povo: valor definido pelo preco_venda do produto no admin
+        # Gás do Povo: valor definido pelo preco_gas_do_povo do produto no admin
         if forma_pagamento_1 == "gas_do_povo":
-            valor_pagamento_1 = str(produto.preco_venda)
+            valor_pagamento_1 = str(produto.preco_gas_do_povo)
             valor_pagamento_2 = None
             forma_pagamento_2 = None
         elif forma_pagamento_2 == "gas_do_povo":
-            valor_pagamento_2 = str(produto.preco_venda)
+            valor_pagamento_2 = str(produto.preco_gas_do_povo)
 
         cliente = None
         if cliente_id:
@@ -823,9 +823,9 @@ def pedidos(request):
                     "erro": "Produto não encontrado."
                 })
 
-            # Gás do Povo: preço vem do produto, não do formulário
+            # Gás do Povo: preço vem do preco_gas_do_povo, não do formulário
             if forma_pagamento == "gas_do_povo":
-                preco_unitario = str(produto.preco_venda)
+                preco_unitario = str(produto.preco_gas_do_povo)
 
             if not preco_unitario:
                 return render(request, "pedidos.html", {

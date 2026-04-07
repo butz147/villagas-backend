@@ -91,6 +91,12 @@ class Produto(models.Model):
     alerta_estoque_minimo = models.IntegerField(default=10)
     custo_unitario = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     preco_venda = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    preco_gas_do_povo = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Preço fixo do benefício Gás do Povo (diferente do preço normal de venda)."
+    )
 
     imagem = models.ImageField(upload_to='produtos/', blank=True, null=True)
 

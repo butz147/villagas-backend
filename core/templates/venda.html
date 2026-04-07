@@ -37,7 +37,7 @@
                     <select name="produto" id="venda_produto" required>
                         <option value="">Selecione</option>
                         {% for produto in produtos %}
-                            <option value="{{ produto.id }}" data-preco="{{ produto.preco_venda }}">
+                            <option value="{{ produto.id }}" data-preco="{{ produto.preco_venda }}" data-preco-gdp="{{ produto.preco_gas_do_povo }}">
                                 {{ produto.nome }} | cheio: {{ produto.estoque_cheio }} | vazio: {{ produto.estoque_vazio }}
                             </option>
                         {% endfor %}
@@ -128,13 +128,17 @@
                 return opt ? (opt.dataset.preco || '') : '';
             }
 
+            function getPrecoGdp() {
+                var opt = produtoSelect.options[produtoSelect.selectedIndex];
+                return opt ? (opt.dataset.precoGdp || opt.dataset.preco || '') : '';
+            }
+
             function atualizarPagamento() {
                 var isGasPov1 = pag1Select.value === 'gas_do_povo';
                 var isGasPov2 = pag2Select.value === 'gas_do_povo';
 
                 if (isGasPov1) {
-                    var preco = getPrecoSelecionado();
-                    pag1Valor.value = preco;
+                    pag1Valor.value = getPrecoGdp();
                     pag1Valor.readOnly = true;
                     pag1GrupoValor.style.display = 'none';
                     pag2Grupo.style.display = 'none';
@@ -147,8 +151,7 @@
                     aviso.style.display = (isGasPov2) ? 'block' : 'none';
 
                     if (isGasPov2) {
-                        var preco = getPrecoSelecionado();
-                        pag2Valor.value = preco;
+                        pag2Valor.value = getPrecoGdp();
                         pag2Valor.readOnly = true;
                         pag2GrupoValor.style.display = 'none';
                     } else {
