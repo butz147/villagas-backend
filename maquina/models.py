@@ -38,6 +38,40 @@ class Maquina(models.Model):
         return self.nome
 
 
+class PagamentoPendente(models.Model):
+    STATUS_CHOICES = [
+        ('aguardando', 'Aguardando pagamento'),
+        ('pago', 'Pago'),
+        ('expirado', 'Expirado'),
+        ('cancelado', 'Cancelado'),
+    ]
+
+    maquina = models.ForeignKey(Maquina, on_delete=models.CASCADE, related_name='pagamentos')
+    tipo_venda = models.CharField(max_length=10)           # 'troca' ou 'avulso'
+    forma_pagamento = models.CharField(max_length=10)      # 'pix', 'credito', 'debito'
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    cliente_id = models.IntegerField(null=True, blank=True)
+
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='aguardando')
+
+    # IDs do gateway (Stone)
+    stone_order_id = models.CharField(max_length=100, blank=True)
+    stone_qr_code = models.TextField(blank=True)           # payload do QR code PIX
+    stone_qr_code_url = models.CharField(max_length=500, blank=True)
+
+    criado_em = models.DateTimeField(auto_now_add=True)
+    pago_em = models.DateTimeField(null=True, blank=True)
+    expira_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Pagamento Pendente'
+        verbose_name_plural = 'Pagamentos Pendentes'
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f'{self.maquina.nome} — R${self.valor} ({self.status})'
+
+
 class MaquinaEvento(models.Model):
     TIPO_CHOICES = [
         ('alarme_gas', 'Alarme de Gás'),
