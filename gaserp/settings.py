@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     
     'core',
     'pedidos',
+    'maquina',
 ]
 
 JAZZMIN_SETTINGS = {
