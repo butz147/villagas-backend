@@ -2693,9 +2693,9 @@ def compras_estoque(request):
     if not loja:
         return render(request, "erro_loja.html")
 
-    if not usuario_eh_gerente_ou_admin(request.user):
+    if not (usuario_eh_gerente_ou_admin(request.user) or usuario_eh_funcionario(request.user)):
         return render(request, "operacao_bloqueada.html", {
-            "mensagem": "Apenas gerente ou admin podem registrar compras de estoque."
+            "mensagem": "Acesso negado."
         })
 
     if dia_fechado(loja):
