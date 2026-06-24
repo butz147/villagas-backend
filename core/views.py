@@ -118,6 +118,7 @@ def somar_pagamentos_mistos(vendas):
     pix = 0
     credito = 0
     debito = 0
+    gas_do_povo = 0
 
     for venda in vendas:
         if venda.forma_pagamento_1 == "dinheiro":
@@ -128,6 +129,8 @@ def somar_pagamentos_mistos(vendas):
             credito += float(venda.valor_pagamento_1 or 0)
         elif venda.forma_pagamento_1 == "debito":
             debito += float(venda.valor_pagamento_1 or 0)
+        elif venda.forma_pagamento_1 == "gas_do_povo":
+            gas_do_povo += float(venda.valor_pagamento_1 or 0)
 
         if venda.forma_pagamento_2 == "dinheiro":
             dinheiro += float(venda.valor_pagamento_2 or 0)
@@ -137,8 +140,10 @@ def somar_pagamentos_mistos(vendas):
             credito += float(venda.valor_pagamento_2 or 0)
         elif venda.forma_pagamento_2 == "debito":
             debito += float(venda.valor_pagamento_2 or 0)
+        elif venda.forma_pagamento_2 == "gas_do_povo":
+            gas_do_povo += float(venda.valor_pagamento_2 or 0)
 
-    return dinheiro, pix, credito, debito
+    return dinheiro, pix, credito, debito, gas_do_povo
 
 
 def somar_pagamentos_pedidos(pedidos):
@@ -535,7 +540,7 @@ def dashboard(request):
     for venda in vendas_periodo:
         total_periodo += float(venda.quantidade * venda.preco_unitario)
 
-    dinheiro, pix, credito, debito = somar_pagamentos_mistos(vendas_periodo)
+    dinheiro, pix, credito, debito, gas_do_povo_soma = somar_pagamentos_mistos(vendas_periodo)
 
     total_vendas = vendas_periodo.count()
 
@@ -1519,7 +1524,7 @@ def fechamento_caixa(request):
             produtos_pedidos[nome] = 0
         produtos_pedidos[nome] += pedido.quantidade
 
-    dinheiro_vendas, pix_vendas, credito_vendas, debito_vendas = somar_pagamentos_mistos(vendas)
+    dinheiro_vendas, pix_vendas, credito_vendas, debito_vendas, gas_do_povo_vendas = somar_pagamentos_mistos(vendas)
     dinheiro_pedidos, pix_pedidos, credito_pedidos, debito_pedidos = somar_pagamentos_pedidos(pedidos)
 
     return render(request, "fechamento_caixa.html", {
@@ -1535,6 +1540,7 @@ def fechamento_caixa(request):
         "pix_vendas": pix_vendas,
         "credito_vendas": credito_vendas,
         "debito_vendas": debito_vendas,
+        "gas_do_povo_vendas": gas_do_povo_vendas,
         "dinheiro_pedidos": dinheiro_pedidos,
         "pix_pedidos": pix_pedidos,
         "credito_pedidos": credito_pedidos,
@@ -2327,7 +2333,7 @@ def fechamento_caixa_pdf(request):
     total_despesas = sum(float(d.valor) for d in despesas)
     total_retiradas = sum(float(r.valor) for r in retiradas)
 
-    dinheiro_vendas, pix_vendas, credito_vendas, debito_vendas = somar_pagamentos_mistos(vendas)
+    dinheiro_vendas, pix_vendas, credito_vendas, debito_vendas, gas_do_povo_vendas = somar_pagamentos_mistos(vendas)
     dinheiro_pedidos, pix_pedidos, credito_pedidos, debito_pedidos = somar_pagamentos_pedidos(pedidos)
 
     total_geral = total_vendas + total_pedidos - total_despesas - total_retiradas
@@ -2414,7 +2420,7 @@ def fechamento_caixa_excel(request):
     total_despesas = sum(float(d.valor) for d in despesas)
     total_retiradas = sum(float(r.valor) for r in retiradas)
 
-    dinheiro_vendas, pix_vendas, credito_vendas, debito_vendas = somar_pagamentos_mistos(vendas)
+    dinheiro_vendas, pix_vendas, credito_vendas, debito_vendas, gas_do_povo_vendas = somar_pagamentos_mistos(vendas)
     dinheiro_pedidos, pix_pedidos, credito_pedidos, debito_pedidos = somar_pagamentos_pedidos(pedidos)
 
     total_geral = total_vendas + total_pedidos - total_despesas - total_retiradas
@@ -2991,7 +2997,7 @@ def salvar_fechamento_caixa(request):
     for retirada in retiradas:
         total_retiradas += float(retirada.valor)
 
-    dinheiro_vendas, pix_vendas, credito_vendas, debito_vendas = somar_pagamentos_mistos(vendas)
+    dinheiro_vendas, pix_vendas, credito_vendas, debito_vendas, gas_do_povo_vendas = somar_pagamentos_mistos(vendas)
     dinheiro_pedidos, pix_pedidos, credito_pedidos, debito_pedidos = somar_pagamentos_pedidos(pedidos)
 
     total_geral = total_vendas + total_pedidos - total_despesas - total_retiradas

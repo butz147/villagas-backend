@@ -68,6 +68,12 @@
                         <th>Débito</th>
                         <td>R$ {{ debito_vendas }}</td>
                     </tr>
+                    {% if gas_do_povo_vendas %}
+                    <tr>
+                        <th>Gás do Povo</th>
+                        <td>R$ {{ gas_do_povo_vendas }}</td>
+                    </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
