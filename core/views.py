@@ -329,14 +329,6 @@ def registrar_venda(request):
         soma_pagamentos = (valor_1 + valor_2).quantize(Decimal("0.01"))
         total_venda = total_venda.quantize(Decimal("0.01"))
 
-        if soma_pagamentos != total_venda:
-            return render(request, "venda.html", {
-                "produtos": produtos,
-                "clientes": clientes,
-                "loja": loja,
-                "erro": f"A soma dos pagamentos deve ser igual ao total da venda (R$ {total_venda})."
-            })
-
         if valor_1 <= 0:
             return render(request, "venda.html", {
                 "produtos": produtos,
