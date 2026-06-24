@@ -51,7 +51,7 @@
 
                 <div class="form-group">
                     <label>Preço unitário</label>
-                    <input type="number" step="0.01" name="preco" required>
+                    <input type="number" step="0.01" name="preco" id="preco_unitario" required>
                 </div>
 
                 <div class="form-group">
@@ -114,6 +114,7 @@
         <script>
         (function() {
             var produtoSelect = document.getElementById('venda_produto');
+            var precoUnitario = document.getElementById('preco_unitario');
             var pag1Select = document.getElementById('pag1_select');
             var pag1Valor = document.getElementById('pag1_valor');
             var pag1GrupoValor = document.getElementById('pag1_valor_grupo');
@@ -161,9 +162,13 @@
                 }
             }
 
+            produtoSelect.addEventListener('change', function() {
+                var preco = getPrecoSelecionado();
+                if (preco) precoUnitario.value = preco;
+                atualizarPagamento();
+            });
             pag1Select.addEventListener('change', atualizarPagamento);
             pag2Select.addEventListener('change', atualizarPagamento);
-            produtoSelect.addEventListener('change', atualizarPagamento);
         })();
         </script>
     </div>
