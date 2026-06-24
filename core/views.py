@@ -329,7 +329,7 @@ def registrar_venda(request):
         soma_pagamentos = (valor_1 + valor_2).quantize(Decimal("0.01"))
         total_venda = total_venda.quantize(Decimal("0.01"))
 
-        if valor_1 <= 0:
+        if forma_pagamento_1 != "gas_do_povo" and valor_1 <= 0:
             return render(request, "venda.html", {
                 "produtos": produtos,
                 "clientes": clientes,
@@ -337,7 +337,7 @@ def registrar_venda(request):
                 "erro": "O valor do pagamento 1 deve ser maior que zero."
             })
 
-        if forma_pagamento_2 and valor_2 <= 0:
+        if forma_pagamento_2 and forma_pagamento_2 != "gas_do_povo" and valor_2 <= 0:
             return render(request, "venda.html", {
                 "produtos": produtos,
                 "clientes": clientes,
