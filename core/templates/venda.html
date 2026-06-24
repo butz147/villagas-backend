@@ -206,6 +206,7 @@
                     <th style="padding:8px 10px;">Qtd</th>
                     <th style="padding:8px 10px;">Preço unit.</th>
                     <th style="padding:8px 10px;">Total</th>
+                    <th style="padding:8px 10px;">Valor pago</th>
                     <th style="padding:8px 10px;">Pagamento</th>
                     <th style="padding:8px 10px;">Funcionário</th>
                 </tr>
@@ -217,7 +218,8 @@
                     <td style="padding:8px 10px;">{{ v.produto.nome }}</td>
                     <td style="padding:8px 10px;">{{ v.quantidade }}</td>
                     <td style="padding:8px 10px;">R$ {{ v.preco_unitario }}</td>
-                    <td style="padding:8px 10px;font-weight:600;">R$ {{ v.total_venda }}</td>
+                    <td style="padding:8px 10px;">R$ {{ v.total_venda }}</td>
+                    <td style="padding:8px 10px;font-weight:600;">R$ {{ v.valor_pagamento_1 }}{% if v.valor_pagamento_2 %} + R$ {{ v.valor_pagamento_2 }}{% endif %}</td>
                     <td style="padding:8px 10px;">{{ v.get_forma_pagamento_1_display }}{% if v.forma_pagamento_2 %} + {{ v.get_forma_pagamento_2_display }}{% endif %}</td>
                     <td style="padding:8px 10px;">{{ v.funcionario.username }}</td>
                 </tr>
