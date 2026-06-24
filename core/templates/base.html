@@ -87,6 +87,7 @@
         </div>
         <div class="mobile-nav-section">
             <div class="mobile-nav-title"><i class="bi bi-currency-dollar"></i> Financeiro</div>
+            <a href="/fechamento-caixa/" class="{% if request.path == '/fechamento-caixa/' %}active{% endif %}"><i class="bi bi-cash-stack"></i> Fechamento</a>
             <a href="/retiradas-funcionarios/" class="{% if request.path == '/retiradas-funcionarios/' %}active{% endif %}"><i class="bi bi-wallet2"></i> Retiradas</a>
         </div>
         {% endif %}
@@ -203,6 +204,9 @@
             </div>
             <div class="nav-group">
                 <div class="nav-group-title"><i class="bi bi-currency-dollar"></i> Financeiro</div>
+                <a class="{% if request.path == '/fechamento-caixa/' %}active{% endif %}" href="/fechamento-caixa/">
+                    <i class="bi bi-cash-stack"></i> <span>Fechamento</span>
+                </a>
                 <a class="{% if request.path == '/retiradas-funcionarios/' %}active{% endif %}" href="/retiradas-funcionarios/">
                     <i class="bi bi-wallet2"></i> <span>Retiradas</span>
                 </a>

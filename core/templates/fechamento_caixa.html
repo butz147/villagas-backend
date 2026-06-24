@@ -14,6 +14,13 @@
         <h3>Total de vendas</h3>
         <div class="value">R$ {{ total_vendas }}</div>
         <p>Quantidade: {{ quantidade_vendas }}</p>
+        {% if produtos_vendas %}
+        <div style="margin-top:8px;font-size:0.85rem;text-align:left;">
+            {% for nome, qtd in produtos_vendas.items %}
+            <div>{{ nome }}: <strong>{{ qtd }}</strong></div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <div class="card metric-card metric-cream">
@@ -21,6 +28,13 @@
         <h3>Total de pedidos</h3>
         <div class="value">R$ {{ total_pedidos }}</div>
         <p>Quantidade: {{ quantidade_pedidos }}</p>
+        {% if produtos_pedidos %}
+        <div style="margin-top:8px;font-size:0.85rem;text-align:left;">
+            {% for nome, qtd in produtos_pedidos.items %}
+            <div>{{ nome }}: <strong>{{ qtd }}</strong></div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <div class="card metric-card metric-green">

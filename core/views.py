@@ -1478,9 +1478,9 @@ def fechamento_caixa(request):
     if not loja:
         return render(request, "erro_loja.html")
 
-    if not usuario_eh_gerente_ou_admin(request.user):
+    if not (usuario_eh_gerente_ou_admin(request.user) or usuario_eh_funcionario(request.user)):
         return render(request, "operacao_bloqueada.html", {
-            "mensagem": "Apenas gerente ou admin podem acessar o fechamento de caixa."
+            "mensagem": "Acesso negado."
         })
 
     hoje = timezone.now().date()
@@ -1489,12 +1489,12 @@ def fechamento_caixa(request):
         data_venda__date=hoje,
         loja=loja,
         status="ativa"
-    )
+    ).select_related("produto")
 
     pedidos = Pedido.objects.filter(
         data_pedido__date=hoje,
         loja=loja
-    ).exclude(status="cancelado")
+    ).exclude(status="cancelado").select_related("produto")
 
     total_vendas = 0
     for venda in vendas:
@@ -1503,6 +1503,21 @@ def fechamento_caixa(request):
     total_pedidos = 0
     for pedido in pedidos:
         total_pedidos += float(pedido.quantidade * pedido.preco_unitario)
+
+    # Breakdown por produto
+    produtos_vendas = {}
+    for venda in vendas:
+        nome = venda.produto.nome
+        if nome not in produtos_vendas:
+            produtos_vendas[nome] = 0
+        produtos_vendas[nome] += venda.quantidade
+
+    produtos_pedidos = {}
+    for pedido in pedidos:
+        nome = pedido.produto.nome
+        if nome not in produtos_pedidos:
+            produtos_pedidos[nome] = 0
+        produtos_pedidos[nome] += pedido.quantidade
 
     dinheiro_vendas, pix_vendas, credito_vendas, debito_vendas = somar_pagamentos_mistos(vendas)
     dinheiro_pedidos, pix_pedidos, credito_pedidos, debito_pedidos = somar_pagamentos_pedidos(pedidos)
@@ -1514,6 +1529,8 @@ def fechamento_caixa(request):
         "quantidade_pedidos": pedidos.count(),
         "total_vendas": total_vendas,
         "total_pedidos": total_pedidos,
+        "produtos_vendas": produtos_vendas,
+        "produtos_pedidos": produtos_pedidos,
         "dinheiro_vendas": dinheiro_vendas,
         "pix_vendas": pix_vendas,
         "credito_vendas": credito_vendas,
