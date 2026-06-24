@@ -80,6 +80,12 @@
             <a href="/clientes/" class="{% if request.path == '/clientes/' %}active{% endif %}"><i class="bi bi-people"></i> Clientes</a>
             <a href="/painel-entregador/" class="{% if request.path == '/painel-entregador/' %}active{% endif %}"><i class="bi bi-truck"></i> Entregas</a>
         </div>
+        {% if perfil_ativo.tipo_usuario == "funcionario" %}
+        <div class="mobile-nav-section">
+            <div class="mobile-nav-title"><i class="bi bi-currency-dollar"></i> Financeiro</div>
+            <a href="/retiradas-funcionarios/" class="{% if request.path == '/retiradas-funcionarios/' %}active{% endif %}"><i class="bi bi-wallet2"></i> Retiradas</a>
+        </div>
+        {% endif %}
         {% if request.user.is_authenticated and perfil_ativo.tipo_usuario == "gerente" or perfil_ativo.tipo_usuario == "admin" %}
         <div class="mobile-nav-section">
             <div class="mobile-nav-title"><i class="bi bi-box-fill"></i> Estoque</div>
