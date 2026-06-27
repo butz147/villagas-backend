@@ -67,18 +67,25 @@
                         {% endfor %}
                     </select>
                 </div>
+            </div>
 
+            <div style="margin-top:16px; margin-bottom:4px; font-weight:600; font-size:0.9rem; color:#374151;">Movimentação de estoque</div>
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
                 <div class="form-group">
-                    <label>Quantidade</label>
-                    <input type="number" name="quantidade" required>
+                    <label>Cheios que entram</label>
+                    <input type="number" name="cheios_entram" min="0" value="0">
                 </div>
-
                 <div class="form-group">
-                    <label>Tipo de compra</label>
-                    <select name="tipo_compra" required>
-                        <option value="troca">Troca de vazio por cheio</option>
-                        <option value="somente_cheio">Somente entrada de cheio</option>
-                    </select>
+                    <label>Cheios que saem</label>
+                    <input type="number" name="cheios_saem" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Vazios que entram</label>
+                    <input type="number" name="vazios_entram" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Vazios que saem</label>
+                    <input type="number" name="vazios_saem" min="0" value="0">
                 </div>
             </div>
 
@@ -97,19 +104,19 @@
         <div class="section-title">Como funciona</div>
 
         <div class="alert alert-success">
-            <strong>Troca:</strong> entra cheio e sai vazio.
+            Informe exatamente o que entrou e o que saiu em cheios e vazios. O estoque é atualizado na hora.
         </div>
 
         <div class="alert alert-success">
-            <strong>Somente cheio:</strong> entra cheio e o vazio não muda.
+            <strong>Exemplo — troca P13:</strong> Cheios entram: 10 | Vazios saem: 10
         </div>
 
         <div class="alert alert-success">
-            Funcionário ou gerente registra a chegada.
+            <strong>Exemplo — compra nova água:</strong> Cheios entram: 5 | restante: 0
         </div>
 
         <div class="alert alert-success">
-            Só na aprovação do admin o estoque entra oficialmente e o custo médio é atualizado.
+            Admin aprova depois para registrar o custo e atualizar o custo médio.
         </div>
     </div>
 </div>
@@ -124,8 +131,10 @@
                     <th>Data</th>
                     <th>Produto</th>
                     <th>Fornecedor</th>
-                    <th>Quantidade</th>
-                    <th>Tipo de compra</th>
+                    <th>+Cheio</th>
+                    <th>-Cheio</th>
+                    <th>+Vazio</th>
+                    <th>-Vazio</th>
                     <th>Status</th>
 
                     {% if perfil_ativo.tipo_usuario == "admin" %}
@@ -144,8 +153,17 @@
                     <td>{{ compra.data|date:"d/m/Y H:i" }}</td>
                     <td>{{ compra.produto.nome }}</td>
                     <td>{{ compra.fornecedor|default:"-" }}</td>
+                    {% if compra.cheios_entram or compra.cheios_saem or compra.vazios_entram or compra.vazios_saem %}
+                    <td>{{ compra.cheios_entram }}</td>
+                    <td>{{ compra.cheios_saem }}</td>
+                    <td>{{ compra.vazios_entram }}</td>
+                    <td>{{ compra.vazios_saem }}</td>
+                    {% else %}
                     <td>{{ compra.quantidade }}</td>
-                    <td>{{ compra.get_tipo_compra_display }}</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>{% if compra.tipo_compra == "troca" %}{{ compra.quantidade }}{% else %}-{% endif %}</td>
+                    {% endif %}
                     <td>
                         {% if compra.status == "pendente" %}
                             <span class="badge badge-low">Pendente</span>

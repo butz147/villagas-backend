@@ -361,6 +361,11 @@ class CompraEstoque(models.Model):
         default="troca"
     )
 
+    cheios_entram = models.IntegerField(default=0)
+    cheios_saem = models.IntegerField(default=0)
+    vazios_entram = models.IntegerField(default=0)
+    vazios_saem = models.IntegerField(default=0)
+
     custo_unitario_compra = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     custo_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 

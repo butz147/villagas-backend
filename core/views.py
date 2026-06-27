@@ -2745,66 +2745,83 @@ def compras_estoque(request):
     if request.method == "POST":
         produto_id = request.POST.get("produto")
         fornecedor_post = request.POST.get("fornecedor")
-        quantidade = request.POST.get("quantidade")
-        tipo_compra = request.POST.get("tipo_compra", "troca")
         observacoes = request.POST.get("observacoes")
 
-        try:
-            quantidade = int(quantidade)
-        except (TypeError, ValueError):
-            return render(request, "compras_estoque.html", {
-                "loja": loja,
-                "produtos": produtos,
-                "compras": compras,
-                "erro": "Quantidade inválida.",
-                "status": status,
-                "fornecedor": fornecedor_filtro,
-            })
+        def parse_int(val):
+            try:
+                return max(0, int(val or 0))
+            except (TypeError, ValueError):
+                return 0
 
-        if quantidade <= 0:
+        cheios_entram = parse_int(request.POST.get("cheios_entram"))
+        cheios_saem   = parse_int(request.POST.get("cheios_saem"))
+        vazios_entram = parse_int(request.POST.get("vazios_entram"))
+        vazios_saem   = parse_int(request.POST.get("vazios_saem"))
+
+        if cheios_entram == 0 and cheios_saem == 0 and vazios_entram == 0 and vazios_saem == 0:
             return render(request, "compras_estoque.html", {
                 "loja": loja,
                 "produtos": produtos,
                 "compras": compras,
-                "erro": "A quantidade deve ser maior que zero.",
+                "erro": "Informe pelo menos uma movimentação (cheios ou vazios).",
                 "status": status,
                 "fornecedor": fornecedor_filtro,
             })
 
         produto = Produto.objects.get(id=produto_id, loja=loja)
 
-        # Se for troca mas não há vazios suficientes, converte para somente_cheio
-        aviso = None
-        if produto.controla_retorno and tipo_compra == "troca" and produto.estoque_vazio < quantidade:
-            tipo_compra = "somente_cheio"
-            aviso = f"Estoque vazio insuficiente para troca. Compra registrada como 'somente entrada de cheio'."
+        if produto.estoque_cheio + cheios_entram - cheios_saem < 0:
+            return render(request, "compras_estoque.html", {
+                "loja": loja,
+                "produtos": produtos,
+                "compras": compras,
+                "erro": f"Estoque cheio insuficiente. Disponível: {produto.estoque_cheio}.",
+                "status": status,
+                "fornecedor": fornecedor_filtro,
+            })
+
+        if produto.estoque_vazio + vazios_entram - vazios_saem < 0:
+            return render(request, "compras_estoque.html", {
+                "loja": loja,
+                "produtos": produtos,
+                "compras": compras,
+                "erro": f"Estoque vazio insuficiente. Disponível: {produto.estoque_vazio}.",
+                "status": status,
+                "fornecedor": fornecedor_filtro,
+            })
+
+        # Deriva tipo_compra para compatibilidade com registros antigos
+        tipo_compra = "troca" if vazios_saem > 0 else "somente_cheio"
 
         compra = CompraEstoque.objects.create(
             loja=loja,
             produto=produto,
             fornecedor=fornecedor_post,
-            quantidade=quantidade,
+            quantidade=cheios_entram,
             tipo_compra=tipo_compra,
+            cheios_entram=cheios_entram,
+            cheios_saem=cheios_saem,
+            vazios_entram=vazios_entram,
+            vazios_saem=vazios_saem,
             registrado_por=request.user,
             observacoes=observacoes,
             status="pendente",
         )
 
-        # Estoque sobe imediatamente ao registrar a chegada
-        produto.estoque_cheio += quantidade
-        if produto.controla_retorno and tipo_compra == "troca":
-            produto.estoque_vazio -= quantidade
+        produto.estoque_cheio += cheios_entram - cheios_saem
+        produto.estoque_vazio += vazios_entram - vazios_saem
         produto.save()
 
         registrar_auditoria(
             loja=loja,
             usuario=request.user,
             acao="Compra de estoque registrada",
-            descricao=f"Compra #{compra.id} | Produto: {produto.nome} | Quantidade: {quantidade} | Tipo compra: {tipo_compra} | Fornecedor: {fornecedor_post} | Estoque atualizado imediatamente."
+            descricao=(
+                f"Compra #{compra.id} | Produto: {produto.nome} | Fornecedor: {fornecedor_post} | "
+                f"Cheios entram: {cheios_entram} | Cheios saem: {cheios_saem} | "
+                f"Vazios entram: {vazios_entram} | Vazios saem: {vazios_saem}"
+            )
         )
-
-        if aviso:
-            messages.warning(request, aviso)
 
         return redirect("/compras-estoque/")
 
@@ -3474,7 +3491,7 @@ def aprovar_compra_estoque(request, compra_id):
         })
 
     produto = compra.produto
-    quantidade_nova = compra.quantidade
+    quantidade_nova = compra.cheios_entram if compra.cheios_entram else compra.quantidade
 
     # Estoque já subiu no registro — calcular custo médio corretamente
     estoque_total = Decimal(produto.estoque_cheio)  # já inclui quantidade_nova
@@ -3541,12 +3558,16 @@ def reprovar_compra_estoque(request, compra_id):
         })
 
     produto = compra.produto
-    quantidade = compra.quantidade
 
-    # Reverter estoque que foi aplicado no registro
-    produto.estoque_cheio -= quantidade
-    if produto.controla_retorno and compra.tipo_compra == "troca":
-        produto.estoque_vazio += quantidade
+    # Reverter estoque aplicado no registro
+    if compra.cheios_entram or compra.cheios_saem or compra.vazios_entram or compra.vazios_saem:
+        produto.estoque_cheio -= compra.cheios_entram - compra.cheios_saem
+        produto.estoque_vazio -= compra.vazios_entram - compra.vazios_saem
+    else:
+        # Fallback para registros antigos (antes dos 4 campos)
+        produto.estoque_cheio -= compra.quantidade
+        if produto.controla_retorno and compra.tipo_compra == "troca":
+            produto.estoque_vazio += compra.quantidade
     produto.save()
 
     compra.status = "reprovada"

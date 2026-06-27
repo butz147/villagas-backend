@@ -29,15 +29,33 @@
                 <input type="text" value="{{ compra.fornecedor|default:'Não informado' }}" disabled>
             </div>
 
+            {% if compra.cheios_entram or compra.cheios_saem or compra.vazios_entram or compra.vazios_saem %}
+            <div class="form-group">
+                <label>Cheios entram</label>
+                <input type="text" value="{{ compra.cheios_entram }}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Cheios saem</label>
+                <input type="text" value="{{ compra.cheios_saem }}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Vazios entram</label>
+                <input type="text" value="{{ compra.vazios_entram }}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Vazios saem</label>
+                <input type="text" value="{{ compra.vazios_saem }}" disabled>
+            </div>
+            {% else %}
             <div class="form-group">
                 <label>Quantidade</label>
                 <input type="text" value="{{ compra.quantidade }}" disabled>
             </div>
-
             <div class="form-group">
                 <label>Tipo de compra</label>
                 <input type="text" value="{{ compra.get_tipo_compra_display }}" disabled>
             </div>
+            {% endif %}
 
             <div class="form-group">
                 <label>Registrado por</label>
