@@ -114,7 +114,6 @@ urlpatterns = [
     # admin django
     path('admin/', admin.site.urls),
     path('api/pedidos/', include('pedidos.urls')),
-    path('api/maquina/', include('maquina.urls')),
 
     # acesso
     path('login/', login_usuario),
