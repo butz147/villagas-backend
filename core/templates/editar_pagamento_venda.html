@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Pagamento{% endblock %}
+
+{% block content %}
+<div class="topbar">
+    <h1>Editar Pagamento da Venda</h1>
+    <p>Corrija os valores ou formas de pagamento. O estoque não é alterado.</p>
+</div>
+
+{% if erro %}
+    <div class="alert alert-error">{{ erro }}</div>
+{% endif %}
+
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Dados da venda</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Funcionário</label>
+                <input type="text" value="{{ venda.funcionario.username }}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Produto</label>
+                <input type="text" value="{{ venda.produto.nome }}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Quantidade</label>
+                <input type="text" value="{{ venda.quantidade }}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Total da venda</label>
+                <input type="text" value="R$ {{ venda.total_venda }}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Data/hora</label>
+                <input type="text" value="{{ venda.data_venda|date:'d/m/Y H:i' }}" disabled>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Corrigir pagamento</div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Forma de pagamento 1</label>
+                    <select name="forma_pagamento_1" required>
+                        {% for valor, label in pagamentos %}
+                            <option value="{{ valor }}" {% if venda.forma_pagamento_1 == valor %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor pago 1 (R$)</label>
+                    <input type="number" step="0.01" name="valor_pagamento_1" value="{{ venda.valor_pagamento_1 }}" required>
+                </div>
+            </div>
+
+            <div class="form-grid" style="margin-top:12px;">
+                <div class="form-group">
+                    <label>Forma de pagamento 2 (opcional)</label>
+                    <select name="forma_pagamento_2">
+                        <option value="">Nenhum</option>
+                        {% for valor, label in pagamentos %}
+                            <option value="{{ valor }}" {% if venda.forma_pagamento_2 == valor %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor pago 2 (R$)</label>
+                    <input type="number" step="0.01" name="valor_pagamento_2" value="{{ venda.valor_pagamento_2|default:'' }}">
+                </div>
+            </div>
+
+            <div style="margin-top:18px;">
+                <button type="submit" class="btn btn-success">Salvar correção</button>
+                <a href="/venda/" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

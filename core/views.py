@@ -1622,6 +1622,84 @@ def cancelar_venda(request, venda_id):
 
     return redirect("/venda/")
 
+
+@login_required
+def editar_pagamento_venda(request, venda_id):
+    loja = obter_loja_usuario(request.user)
+
+    if not loja:
+        return render(request, "erro_loja.html")
+
+    if not usuario_eh_gerente_ou_admin(request.user):
+        return render(request, "operacao_bloqueada.html", {
+            "mensagem": "Apenas gerente ou admin podem editar pagamentos de vendas."
+        })
+
+    try:
+        venda = Venda.objects.get(id=venda_id, loja=loja)
+    except Venda.DoesNotExist:
+        return render(request, "operacao_bloqueada.html", {"mensagem": "Venda não encontrada."})
+
+    if venda.status == "cancelada":
+        return render(request, "operacao_bloqueada.html", {"mensagem": "Não é possível editar uma venda cancelada."})
+
+    PAGAMENTO_CHOICES = Venda.PAGAMENTO
+
+    if request.method == "POST":
+        forma_1 = request.POST.get("forma_pagamento_1")
+        valor_1 = request.POST.get("valor_pagamento_1")
+        forma_2 = request.POST.get("forma_pagamento_2") or None
+        valor_2 = request.POST.get("valor_pagamento_2") or None
+
+        try:
+            valor_1 = Decimal(valor_1)
+        except (InvalidOperation, TypeError):
+            return render(request, "editar_pagamento_venda.html", {
+                "venda": venda, "pagamentos": PAGAMENTO_CHOICES,
+                "erro": "Valor do pagamento 1 inválido."
+            })
+
+        if valor_1 <= 0:
+            return render(request, "editar_pagamento_venda.html", {
+                "venda": venda, "pagamentos": PAGAMENTO_CHOICES,
+                "erro": "O valor do pagamento 1 deve ser maior que zero."
+            })
+
+        valor_2_decimal = None
+        if forma_2 and valor_2:
+            try:
+                valor_2_decimal = Decimal(valor_2)
+            except (InvalidOperation, TypeError):
+                return render(request, "editar_pagamento_venda.html", {
+                    "venda": venda, "pagamentos": PAGAMENTO_CHOICES,
+                    "erro": "Valor do pagamento 2 inválido."
+                })
+
+        venda.forma_pagamento_1 = forma_1
+        venda.valor_pagamento_1 = valor_1
+        venda.forma_pagamento_2 = forma_2 if forma_2 else None
+        venda.valor_pagamento_2 = valor_2_decimal
+        venda.save()
+
+        registrar_auditoria(
+            loja=loja,
+            usuario=request.user,
+            acao="Pagamento de venda editado",
+            descricao=(
+                f"Venda #{venda.id} | Funcionário: {venda.funcionario.username} | "
+                f"Novo pagamento: {forma_1} R$ {valor_1}"
+                + (f" + {forma_2} R$ {valor_2_decimal}" if forma_2 else "")
+            )
+        )
+
+        return redirect("/venda/")
+
+    return render(request, "editar_pagamento_venda.html", {
+        "venda": venda,
+        "pagamentos": PAGAMENTO_CHOICES,
+    })
+
+
 @login_required
 def novo_cliente(request):
     loja = obter_loja_usuario(request.user)

@@ -81,6 +81,7 @@ from core.views import (
     fechamento_caixa_pdf,
     fechamento_caixa_excel,
     cancelar_venda,
+    editar_pagamento_venda,
     relatorio_vendas,
     auditoria_sistema,
 
@@ -198,6 +199,7 @@ urlpatterns = [
     path('fechamento-caixa/pdf/', fechamento_caixa_pdf),
     path('fechamento-caixa/excel/', fechamento_caixa_excel),
     path('venda/<int:venda_id>/cancelar/', cancelar_venda),
+    path('venda/<int:venda_id>/editar-pagamento/', editar_pagamento_venda),
     path('relatorio/', relatorio_vendas),
     path('auditoria-sistema/', auditoria_sistema),
 

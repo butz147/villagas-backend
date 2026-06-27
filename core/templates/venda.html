@@ -209,6 +209,9 @@
                     <th style="padding:8px 10px;">Valor pago</th>
                     <th style="padding:8px 10px;">Pagamento</th>
                     <th style="padding:8px 10px;">Funcionário</th>
+                    {% if perfil_ativo.tipo_usuario == "gerente" or perfil_ativo.tipo_usuario == "admin" %}
+                    <th style="padding:8px 10px;"></th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -222,6 +225,11 @@
                     <td style="padding:8px 10px;font-weight:600;">R$ {{ v.valor_pagamento_1 }}{% if v.valor_pagamento_2 %} + R$ {{ v.valor_pagamento_2 }}{% endif %}</td>
                     <td style="padding:8px 10px;">{{ v.get_forma_pagamento_1_display }}{% if v.forma_pagamento_2 %} + {{ v.get_forma_pagamento_2_display }}{% endif %}</td>
                     <td style="padding:8px 10px;">{{ v.funcionario.username }}</td>
+                    {% if perfil_ativo.tipo_usuario == "gerente" or perfil_ativo.tipo_usuario == "admin" %}
+                    <td style="padding:8px 10px;">
+                        <a href="/venda/{{ v.id }}/editar-pagamento/" style="font-size:0.8rem;color:#2563eb;">editar</a>
+                    </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
