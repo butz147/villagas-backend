@@ -27,6 +27,14 @@
     </div>
 {% endif %}
 
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'warning' %}warning{% else %}success{% endif %}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
 <div class="grid">
     <div class="card">
         <div class="section-title">Registrar chegada de compra</div>

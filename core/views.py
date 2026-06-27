@@ -2758,7 +2758,7 @@ def compras_estoque(request):
                 "compras": compras,
                 "erro": "Quantidade inválida.",
                 "status": status,
-                "fornecedor": fornecedor,
+                "fornecedor": fornecedor_filtro,
             })
 
         if quantidade <= 0:
@@ -2768,20 +2768,16 @@ def compras_estoque(request):
                 "compras": compras,
                 "erro": "A quantidade deve ser maior que zero.",
                 "status": status,
-                "fornecedor": fornecedor,
+                "fornecedor": fornecedor_filtro,
             })
 
         produto = Produto.objects.get(id=produto_id, loja=loja)
 
+        # Se for troca mas não há vazios suficientes, converte para somente_cheio
+        aviso = None
         if produto.controla_retorno and tipo_compra == "troca" and produto.estoque_vazio < quantidade:
-            return render(request, "compras_estoque.html", {
-                "loja": loja,
-                "produtos": produtos,
-                "compras": compras,
-                "erro": "Estoque vazio insuficiente para fazer a troca com a distribuidora.",
-                "status": status,
-                "fornecedor": fornecedor,
-            })
+            tipo_compra = "somente_cheio"
+            aviso = f"Estoque vazio insuficiente para troca. Compra registrada como 'somente entrada de cheio'."
 
         compra = CompraEstoque.objects.create(
             loja=loja,
@@ -2806,6 +2802,9 @@ def compras_estoque(request):
             acao="Compra de estoque registrada",
             descricao=f"Compra #{compra.id} | Produto: {produto.nome} | Quantidade: {quantidade} | Tipo compra: {tipo_compra} | Fornecedor: {fornecedor_post} | Estoque atualizado imediatamente."
         )
+
+        if aviso:
+            messages.warning(request, aviso)
 
         return redirect("/compras-estoque/")
 
