@@ -3579,7 +3579,11 @@ def reprovar_compra_estoque(request, compra_id):
         loja=loja,
         usuario=request.user,
         acao="Compra de estoque reprovada",
-        descricao=f"Compra #{compra.id} | Produto: {produto.nome} | Quantidade: {quantidade} | Estoque revertido."
+        descricao=(
+            f"Compra #{compra.id} | Produto: {produto.nome} | Estoque revertido. | "
+            f"Cheios entram: {compra.cheios_entram} | Cheios saem: {compra.cheios_saem} | "
+            f"Vazios entram: {compra.vazios_entram} | Vazios saem: {compra.vazios_saem}"
+        )
     )
 
     return redirect("/compras-estoque/")
