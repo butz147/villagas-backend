@@ -103,6 +103,7 @@
             <div class="mobile-nav-title"><i class="bi bi-currency-dollar"></i> Financeiro</div>
             <a href="/dashboard/"><i class="bi bi-speedometer2"></i> Dashboard</a>
             <a href="/fechamento-caixa/"><i class="bi bi-cash-stack"></i> Fechamento</a>
+            <a href="/relatorio/"><i class="bi bi-file-earmark-text"></i> Relatório</a>
             <a href="/despesas/"><i class="bi bi-receipt-cutoff"></i> Despesas</a>
             <a href="/vendas-antecipadas/"><i class="bi bi-calendar-check"></i> Vendas Antecip.</a>
             <a href="/comodatos/"><i class="bi bi-arrow-repeat"></i> Comodatos</a>
@@ -240,6 +241,9 @@
                 </a>
                 <a class="{% if request.path == '/historico-fechamentos/' %}active{% endif %}" href="/historico-fechamentos/">
                     <i class="bi bi-clock-history"></i> <span>Histórico</span>
+                </a>
+                <a class="{% if request.path == '/relatorio/' %}active{% endif %}" href="/relatorio/">
+                    <i class="bi bi-file-earmark-text"></i> <span>Relatório</span>
                 </a>
                 <a class="{% if request.path == '/despesas/' %}active{% endif %}" href="/despesas/">
                     <i class="bi bi-receipt-cutoff"></i> <span>Despesas</span>
