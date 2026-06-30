@@ -3758,19 +3758,49 @@ def relatorio_vendas(request):
     if not loja:
         return render(request, "erro_loja.html")
 
-    vendas = Venda.objects.filter(
-        loja=loja
-    ).order_by("-data_venda")[:100]
+    hoje = timezone.now().date()
+    filtro = request.GET.get("filtro", "hoje")
 
-    total = 0
+    if filtro == "ontem":
+        data_inicial = hoje - timedelta(days=1)
+        data_final = data_inicial
+    elif filtro == "7dias":
+        data_inicial = hoje - timedelta(days=6)
+        data_final = hoje
+    elif filtro == "mes":
+        data_inicial = hoje.replace(day=1)
+        data_final = hoje
+    elif filtro == "personalizado":
+        try:
+            data_inicial = datetime.strptime(request.GET.get("data_inicial"), "%Y-%m-%d").date()
+            data_final = datetime.strptime(request.GET.get("data_final"), "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            filtro = "hoje"
+            data_inicial = hoje
+            data_final = hoje
+    else:
+        filtro = "hoje"
+        data_inicial = hoje
+        data_final = hoje
+
+    vendas = Venda.objects.filter(
+        loja=loja,
+        data_venda__date__gte=data_inicial,
+        data_venda__date__lte=data_final,
+    ).order_by("-data_venda").select_related("produto", "funcionario", "cliente")
+
+    total_geral = 0
     for venda in vendas:
         if venda.status == "ativa":
-            total += float(venda.quantidade * venda.preco_unitario)
+            total_geral += float(venda.quantidade * venda.preco_unitario)
 
     return render(request, "relatorio.html", {
         "loja": loja,
         "vendas": vendas,
-        "total": total,
+        "total_geral": total_geral,
+        "filtro": filtro,
+        "data_inicial": data_inicial,
+        "data_final": data_final,
     })
 
 @login_required
