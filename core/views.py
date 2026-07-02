@@ -169,6 +169,55 @@ def somar_pagamentos_pedidos(pedidos):
 GOOGLE_SHEETS_CONFERENCIA_URL = "https://script.google.com/macros/s/AKfycbzzKCquilK-2as85ZdVv3cT0m-PujpFww3_aW4Ik77TjDzqJqvTZU6QegCRD0ZnBYMDoA/exec"
 
 
+def _reconstruir_cheio(loja, produto, target_date):
+    """Estoque cheio ao fim de target_date via reconstrução forward."""
+    ult = MovimentacaoEstoque.objects.filter(
+        loja=loja, produto=produto, tipo="ajuste_cheio",
+        data_movimentacao__date__lte=target_date,
+    ).order_by("-data_movimentacao").first()
+
+    cheio = ult.quantidade if ult else 0
+    desde = ult.data_movimentacao if ult else None
+
+    movs = MovimentacaoEstoque.objects.filter(
+        loja=loja, produto=produto,
+        tipo__in=["entrada", "saida"],
+        data_movimentacao__date__lte=target_date,
+    )
+    if desde:
+        movs = movs.filter(data_movimentacao__gt=desde)
+
+    for m in movs:
+        cheio += m.quantidade if m.tipo == "entrada" else -m.quantidade
+
+    return cheio
+
+
+def _reconstruir_vazio(loja, produto, target_date):
+    """Estoque vazio ao fim de target_date via reconstrução forward."""
+    ult = MovimentacaoEstoque.objects.filter(
+        loja=loja, produto=produto, tipo="ajuste_vazio",
+        data_movimentacao__date__lte=target_date,
+    ).order_by("-data_movimentacao").first()
+
+    vazio = ult.quantidade if ult else 0
+    desde = ult.data_movimentacao if ult else None
+
+    vendas = Venda.objects.filter(
+        loja=loja, produto=produto,
+        data_venda__date__lte=target_date,
+        status="ativa",
+        tipo_venda__in=["troca", "casco"],
+    )
+    if desde:
+        vendas = vendas.filter(data_venda__gt=desde)
+
+    for v in vendas:
+        vazio += v.quantidade if v.tipo_venda == "troca" else -v.quantidade
+
+    return vazio
+
+
 def _linha(data_str, produto="", preco="", qtd="", total="",
            dinheiro="", pix="", credito="", debito="", gas_do_povo="",
            retiradas="", din_liquido="", saldo="",
@@ -230,56 +279,8 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
     ).select_related("funcionario").order_by("data")
     total_retiradas = sum(float(r.valor) for r in retiradas_qs)
 
-    # --- Calcula estoque fim do dia reconstruindo a partir do estoque atual ---
-    # Reverte todas as operações que aconteceram DEPOIS de 'data' para obter
-    # o estoque real ao fim daquele dia.
     produtos_list = list(Produto.objects.filter(loja=loja).order_by("nome"))
-
-    cheio_fim_map = {}
-    vazio_fim_map = {}
-    for p in produtos_list:
-        cheio = p.estoque_cheio
-        vazio = p.estoque_vazio
-
-        # Desfaz vendas posteriores a 'data'
-        for v in Venda.objects.filter(loja=loja, produto=p, data_venda__date__gt=data, status="ativa"):
-            if not p.controla_retorno:
-                cheio += v.quantidade
-            else:
-                if v.tipo_venda in ("troca", "completo"):
-                    cheio += v.quantidade
-                if v.tipo_venda == "troca":
-                    vazio -= v.quantidade
-                elif v.tipo_venda == "casco":
-                    vazio += v.quantidade
-
-        # Desfaz entradas posteriores
-        for m in MovimentacaoEstoque.objects.filter(loja=loja, produto=p, data_movimentacao__date__gt=data, tipo="entrada"):
-            cheio -= m.quantidade
-
-        cheio_fim_map[p.id] = cheio
-        vazio_fim_map[p.id] = vazio
-
-    # Saídas/entradas do próprio dia para calcular o início
-    saidas_cheio = {}
-    entradas_cheio = {}
-    saidas_vazio = {}
-    entradas_vazio = {}
-
-    for v in vendas:
-        pid = v.produto_id
-        if not v.produto.controla_retorno:
-            saidas_cheio[pid] = saidas_cheio.get(pid, 0) + v.quantidade
-        else:
-            if v.tipo_venda in ("troca", "completo"):
-                saidas_cheio[pid] = saidas_cheio.get(pid, 0) + v.quantidade
-            if v.tipo_venda == "troca":
-                entradas_vazio[pid] = entradas_vazio.get(pid, 0) + v.quantidade
-            elif v.tipo_venda == "casco":
-                saidas_vazio[pid] = saidas_vazio.get(pid, 0) + v.quantidade
-
-    for m in MovimentacaoEstoque.objects.filter(loja=loja, data_movimentacao__date=data, tipo="entrada"):
-        entradas_cheio[m.produto_id] = entradas_cheio.get(m.produto_id, 0) + m.quantidade
+    data_anterior = data - timedelta(days=1)
 
     data_str = data.strftime("%d/%m/%Y")
     linhas = []
@@ -313,14 +314,12 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
         linhas.append(_linha(data_str, produto=label,
                              retiradas=round(float(r.valor), 2)))
 
-    # --- Linhas de estoque (início e fim do dia) ---
-    # Colunas: Cheio Ini | Vazio Ini | Cheio Fim | Vazio Fim
+    # --- Linhas de estoque: Cheio Ini | Vazio Ini | Cheio Fim | Vazio Fim ---
     for p in produtos_list:
-        pid = p.id
-        cheio_fim = cheio_fim_map.get(pid, p.estoque_cheio)
-        vazio_fim = vazio_fim_map.get(pid, p.estoque_vazio)
-        cheio_ini = cheio_fim + saidas_cheio.get(pid, 0) - entradas_cheio.get(pid, 0)
-        vazio_ini = vazio_fim - entradas_vazio.get(pid, 0) + saidas_vazio.get(pid, 0)
+        cheio_ini = _reconstruir_cheio(loja, p, data_anterior)
+        vazio_ini = _reconstruir_vazio(loja, p, data_anterior)
+        cheio_fim = _reconstruir_cheio(loja, p, data)
+        vazio_fim = _reconstruir_vazio(loja, p, data)
         linhas.append(_linha(data_str, produto=f"  ESTOQUE {p.nome}",
                              cheio_ini=cheio_ini, vazio_ini=vazio_ini,
                              cheio_fim=cheio_fim, vazio_fim=vazio_fim))
