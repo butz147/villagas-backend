@@ -106,6 +106,9 @@ from core.views import (
 
     # notificações
     notificacoes,
+
+    # conferência
+    conferencia_excel,
 )
 
 from core.views import notificacoes_json, trocar_loja
@@ -223,6 +226,9 @@ urlpatterns = [
     path('notificacoes/', notificacoes),
     path('api/notificacoes/', notificacoes_json),
     path('trocar-loja/', trocar_loja),
+
+    # conferência
+    path('conferencia/excel/', conferencia_excel, name='conferencia_excel'),
 ]
 
 if settings.DEBUG:
