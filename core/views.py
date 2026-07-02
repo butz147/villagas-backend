@@ -334,15 +334,56 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
         linhas.append(_linha(data_str, produto=label,
                              retiradas=round(float(r.valor), 2)))
 
-    # --- Linhas de estoque: Cheio Ini | Vazio Ini | Cheio Fim | Vazio Fim ---
+    # --- Linhas de estoque: mesma lógica do relatório (backward do estoque atual) ---
+    def _delta_movs(vendas_list, compras_list):
+        d = {}
+        for v in vendas_list:
+            pid = v.produto_id
+            if pid not in d:
+                d[pid] = {"cheio": 0, "vazio": 0}
+            if v.tipo_venda in ("normal", "troca", "completo"):
+                d[pid]["cheio"] -= v.quantidade
+            elif v.tipo_venda == "casco":
+                d[pid]["vazio"] -= v.quantidade
+            if v.tipo_venda == "troca":
+                d[pid]["vazio"] += v.quantidade
+        for c in compras_list:
+            pid = c.produto_id
+            if pid not in d:
+                d[pid] = {"cheio": 0, "vazio": 0}
+            if c.cheios_entram or c.cheios_saem or c.vazios_entram or c.vazios_saem:
+                d[pid]["cheio"] += c.cheios_entram - c.cheios_saem
+                d[pid]["vazio"] += c.vazios_entram - c.vazios_saem
+            else:
+                d[pid]["cheio"] += c.quantidade
+                if c.tipo_compra == "troca":
+                    d[pid]["vazio"] -= c.quantidade
+        return d
+
+    compras_dia = list(CompraEstoque.objects.filter(
+        loja=loja, data__date=data, status__in=["pendente", "aprovada"]
+    ))
+    delta_dia = _delta_movs(list(vendas), compras_dia)
+
+    v_after = list(Venda.objects.filter(
+        loja=loja, data_venda__date__gt=data, status="ativa"
+    ).select_related("produto"))
+    c_after = list(CompraEstoque.objects.filter(
+        loja=loja, data__date__gt=data, status__in=["pendente", "aprovada"]
+    ))
+    delta_after = _delta_movs(v_after, c_after)
+
     for p in produtos_list:
-        cheio_ini = _reconstruir_cheio(loja, p, data_anterior)
-        vazio_ini = _reconstruir_vazio(loja, p, data_anterior)
-        cheio_fim = _reconstruir_cheio(loja, p, data)
-        vazio_fim = _reconstruir_vazio(loja, p, data)
+        pid = p.id
+        da = delta_after.get(pid, {"cheio": 0, "vazio": 0})
+        dp = delta_dia.get(pid, {"cheio": 0, "vazio": 0})
+        fim_cheio = p.estoque_cheio - da["cheio"]
+        fim_vazio = p.estoque_vazio - da["vazio"]
+        ini_cheio = fim_cheio - dp["cheio"]
+        ini_vazio = fim_vazio - dp["vazio"]
         linhas.append(_linha(data_str, produto=f"  ESTOQUE {p.nome}",
-                             cheio_ini=cheio_ini, vazio_ini=vazio_ini,
-                             cheio_fim=cheio_fim, vazio_fim=vazio_fim))
+                             cheio_ini=ini_cheio, vazio_ini=ini_vazio,
+                             cheio_fim=fim_cheio, vazio_fim=fim_vazio))
 
     try:
         resp = requests.post(
