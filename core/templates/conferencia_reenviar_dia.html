@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reenviar Dia para Planilha</title>
+    <style>
+        body { font-family: Arial; background: #f4f6f9; padding: 50px; }
+        .card { max-width: 480px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.08); text-align: center; }
+        h1 { color: #2c3e50; font-size: 1.4rem; margin-bottom: 20px; }
+        label { display: block; text-align: left; margin-bottom: 6px; font-weight: bold; color: #444; }
+        input[type="date"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+        button { margin-top: 16px; width: 100%; padding: 12px; background: #0d6efd; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+        button:hover { background: #0b5ed7; }
+        .msg-ok { margin-top: 20px; color: #198754; font-weight: bold; }
+        .msg-erro { margin-top: 20px; color: #dc3545; font-weight: bold; }
+        a { display: inline-block; margin-top: 20px; padding: 10px 15px; background: #6c757d; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>Reenviar Dia para Planilha</h1>
+
+    {% if mensagem %}
+        <p class="msg-ok">{{ mensagem }}</p>
+    {% endif %}
+    {% if erro %}
+        <p class="msg-erro">{{ erro }}</p>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <label for="data">Selecione o dia:</label>
+        <input type="date" name="data" id="data" required>
+        <button type="submit">Reenviar</button>
+    </form>
+
+    <a href="/dashboard/">Voltar</a>
+</div>
+</body>
+</html>

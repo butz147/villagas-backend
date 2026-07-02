@@ -6018,3 +6018,56 @@ def conferencia_reenviar_historico(request):
         mensagem = f"{enviados} de {total_dias} dia(s) enviados, {erros} com erro. Verifique o log do servidor."
 
     return render(request, "operacao_bloqueada.html", {"mensagem": mensagem})
+
+
+def conferencia_reenviar_dia(request):
+    if not usuario_eh_gerente_ou_admin(request.user):
+        return render(request, "operacao_bloqueada.html", {
+            "mensagem": "Apenas gerente ou admin podem reenviar dados para a planilha."
+        })
+
+    loja = obter_loja_usuario(request.user)
+    if not loja:
+        return render(request, "erro_loja.html")
+
+    if request.method == "GET":
+        return render(request, "conferencia_reenviar_dia.html")
+
+    data_str = request.POST.get("data", "").strip()
+    if not data_str:
+        return render(request, "conferencia_reenviar_dia.html", {"erro": "Informe uma data."})
+
+    try:
+        data = datetime.strptime(data_str, "%Y-%m-%d").date()
+    except ValueError:
+        return render(request, "conferencia_reenviar_dia.html", {"erro": "Data inválida."})
+
+    vendas_dia = Venda.objects.filter(
+        loja=loja, data_venda__date=data, status="ativa"
+    ).select_related("produto")
+
+    if not vendas_dia.exists():
+        return render(request, "conferencia_reenviar_dia.html", {
+            "erro": f"Nenhuma venda encontrada em {data.strftime('%d/%m/%Y')}."
+        })
+
+    # Remove as linhas desse dia na planilha antes de reinserir
+    data_formatada = data.strftime("%d/%m/%Y")
+    try:
+        requests.post(
+            GOOGLE_SHEETS_CONFERENCIA_URL,
+            json={"action": "clear_date", "data": data_formatada},
+            headers={"Content-Type": "application/json"},
+            allow_redirects=True,
+            timeout=30,
+        )
+    except Exception as e:
+        print("Erro ao limpar dia na planilha:", e)
+
+    ok = enviar_fechamento_google_sheets(loja, data, vendas_dia)
+    if ok:
+        mensagem = f"Dia {data_formatada} reenviado com sucesso para a planilha."
+    else:
+        mensagem = f"Erro ao enviar {data_formatada} para a planilha. Verifique o log do servidor."
+
+    return render(request, "conferencia_reenviar_dia.html", {"mensagem": mensagem})
