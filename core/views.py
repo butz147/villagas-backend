@@ -170,6 +170,7 @@ GOOGLE_SHEETS_CONFERENCIA_URL = "https://script.google.com/macros/s/AKfycbzzKCqu
 
 
 def enviar_fechamento_google_sheets(loja, data, vendas):
+    """Retorna True se enviou com sucesso, False se falhou."""
     # Agrupa por (produto, preco_unitario) para separar preços diferentes
     grupos = {}
     for v in vendas:
@@ -272,9 +273,18 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
         })
 
     try:
-        requests.post(GOOGLE_SHEETS_CONFERENCIA_URL, json={"linhas": linhas}, timeout=10)
+        resp = requests.post(
+            GOOGLE_SHEETS_CONFERENCIA_URL,
+            json={"linhas": linhas},
+            headers={"Content-Type": "application/json"},
+            allow_redirects=True,
+            timeout=30,
+        )
+        print("Google Sheets resposta:", resp.status_code, resp.text[:200])
+        return resp.status_code == 200
     except Exception as e:
         print("Erro ao enviar fechamento para Google Sheets:", e)
+        return False
 
 
 def enviar_para_google_sheets(venda):
@@ -5856,6 +5866,7 @@ def conferencia_reenviar_historico(request):
     fechamentos = FechamentoCaixa.objects.filter(loja=loja).order_by("data")
 
     enviados = 0
+    erros = 0
     for fechamento in fechamentos:
         vendas_dia = Venda.objects.filter(
             loja=loja,
@@ -5863,9 +5874,15 @@ def conferencia_reenviar_historico(request):
             status="ativa",
         ).select_related("produto")
 
-        enviar_fechamento_google_sheets(loja, fechamento.data, vendas_dia)
-        enviados += 1
+        ok = enviar_fechamento_google_sheets(loja, fechamento.data, vendas_dia)
+        if ok:
+            enviados += 1
+        else:
+            erros += 1
 
-    return render(request, "operacao_bloqueada.html", {
-        "mensagem": f"Histórico reenviado com sucesso: {enviados} dia(s) enviados para o Google Sheets."
-    })
+    if erros == 0:
+        mensagem = f"Histórico enviado com sucesso: {enviados} dia(s) na planilha."
+    else:
+        mensagem = f"{enviados} dia(s) enviados, {erros} dia(s) com erro. Verifique o log do servidor."
+
+    return render(request, "operacao_bloqueada.html", {"mensagem": mensagem})
