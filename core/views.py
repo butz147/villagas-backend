@@ -5863,18 +5863,24 @@ def conferencia_reenviar_historico(request):
     if not loja:
         return render(request, "erro_loja.html")
 
-    fechamentos = FechamentoCaixa.objects.filter(loja=loja).order_by("data")
+    # Busca todos os dias que tiveram vendas (com ou sem fechamento formal)
+    dias_com_vendas = (
+        Venda.objects.filter(loja=loja, status="ativa")
+        .values_list("data_venda__date", flat=True)
+        .distinct()
+        .order_by("data_venda__date")
+    )
 
     enviados = 0
     erros = 0
-    for fechamento in fechamentos:
+    for data_dia in dias_com_vendas:
         vendas_dia = Venda.objects.filter(
             loja=loja,
-            data_venda__date=fechamento.data,
+            data_venda__date=data_dia,
             status="ativa",
         ).select_related("produto")
 
-        ok = enviar_fechamento_google_sheets(loja, fechamento.data, vendas_dia)
+        ok = enviar_fechamento_google_sheets(loja, data_dia, vendas_dia)
         if ok:
             enviados += 1
         else:
