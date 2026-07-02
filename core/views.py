@@ -169,6 +169,61 @@ def somar_pagamentos_pedidos(pedidos):
 GOOGLE_SHEETS_CONFERENCIA_URL = "https://script.google.com/macros/s/AKfycbzzKCquilK-2as85ZdVv3cT0m-PujpFww3_aW4Ik77TjDzqJqvTZU6QegCRD0ZnBYMDoA/exec"
 
 
+def enviar_compra_google_sheets(compra):
+    tz = timezone.get_current_timezone()
+    data_str = compra.data.astimezone(tz).strftime("%d/%m/%Y")
+    total = float(compra.custo_total) if compra.custo_total else ""
+    qtd = compra.cheios_entram if compra.cheios_entram else compra.quantidade
+    linha = {
+        "data": data_str,
+        "tipo": "COMPRA",
+        "produto": compra.produto.nome,
+        "fornecedor": compra.fornecedor or "",
+        "qtd": qtd,
+        "total": total,
+        "cheio_mais": compra.cheios_entram,
+        "cheio_menos": compra.cheios_saem,
+        "vazio_mais": compra.vazios_entram,
+        "vazio_menos": compra.vazios_saem,
+        "status": compra.get_status_display(),
+        "obs": compra.observacoes or "",
+        "id": compra.id,
+    }
+    try:
+        resp = requests.post(
+            GOOGLE_SHEETS_CONFERENCIA_URL,
+            json={"action": "add_compra", "linha": linha},
+            headers={"Content-Type": "application/json"},
+            allow_redirects=True,
+            timeout=30,
+        )
+        return resp.status_code == 200
+    except Exception as e:
+        print("Erro ao enviar compra para Google Sheets:", e)
+        return False
+
+
+def atualizar_status_compra_google_sheets(compra):
+    total = float(compra.custo_total) if compra.custo_total else ""
+    try:
+        resp = requests.post(
+            GOOGLE_SHEETS_CONFERENCIA_URL,
+            json={
+                "action": "update_compra_status",
+                "id": compra.id,
+                "status": compra.get_status_display(),
+                "total": total,
+            },
+            headers={"Content-Type": "application/json"},
+            allow_redirects=True,
+            timeout=30,
+        )
+        return resp.status_code == 200
+    except Exception as e:
+        print("Erro ao atualizar status compra no Google Sheets:", e)
+        return False
+
+
 def _reconstruir_cheio(loja, produto, target_date):
     """
     Estoque cheio ao fim de target_date.
@@ -3135,6 +3190,7 @@ def compras_estoque(request):
             )
         )
 
+        enviar_compra_google_sheets(compra)
         return redirect("/compras-estoque/")
 
     return render(request, "compras_estoque.html", {
@@ -3841,6 +3897,7 @@ def aprovar_compra_estoque(request, compra_id):
         descricao=f"Compra #{compra.id} | Produto: {produto.nome} | Quantidade: {quantidade_nova} | Tipo compra: {compra.tipo_compra} | Custo unitário: R$ {custo_unitario_compra}"
     )
 
+    atualizar_status_compra_google_sheets(compra)
     return redirect("/compras-estoque/")
 
 
@@ -3900,6 +3957,7 @@ def reprovar_compra_estoque(request, compra_id):
         )
     )
 
+    atualizar_status_compra_google_sheets(compra)
     return redirect("/compras-estoque/")
 
 
@@ -6016,6 +6074,46 @@ def conferencia_reenviar_historico(request):
         mensagem = f"Planilha limpa e histórico reenviado: {enviados} de {total_dias} dia(s)."
     else:
         mensagem = f"{enviados} de {total_dias} dia(s) enviados, {erros} com erro. Verifique o log do servidor."
+
+    return render(request, "operacao_bloqueada.html", {"mensagem": mensagem})
+
+
+def conferencia_reenviar_compras(request):
+    if not usuario_eh_gerente_ou_admin(request.user):
+        return render(request, "operacao_bloqueada.html", {
+            "mensagem": "Apenas gerente ou admin podem reenviar compras para a planilha."
+        })
+
+    loja = obter_loja_usuario(request.user)
+    if not loja:
+        return render(request, "erro_loja.html")
+
+    try:
+        requests.post(
+            GOOGLE_SHEETS_CONFERENCIA_URL,
+            json={"action": "clear_compras"},
+            headers={"Content-Type": "application/json"},
+            allow_redirects=True,
+            timeout=30,
+        )
+    except Exception as e:
+        print("Erro ao limpar aba Compras:", e)
+
+    compras = CompraEstoque.objects.filter(loja=loja).order_by("data")
+    enviados = 0
+    erros = 0
+    for compra in compras:
+        ok = enviar_compra_google_sheets(compra)
+        if ok:
+            enviados += 1
+        else:
+            erros += 1
+
+    total = compras.count()
+    if erros == 0:
+        mensagem = f"Aba Compras limpa e reenviada: {enviados} de {total} compra(s)."
+    else:
+        mensagem = f"{enviados} de {total} compra(s) enviadas, {erros} com erro."
 
     return render(request, "operacao_bloqueada.html", {"mensagem": mensagem})
 

@@ -111,6 +111,7 @@ from core.views import (
     conferencia_excel,
     conferencia_reenviar_historico,
     conferencia_reenviar_dia,
+    conferencia_reenviar_compras,
 )
 
 from core.views import notificacoes_json, trocar_loja
@@ -233,6 +234,7 @@ urlpatterns = [
     path('conferencia/excel/', conferencia_excel, name='conferencia_excel'),
     path('conferencia/reenviar-historico/', conferencia_reenviar_historico, name='conferencia_reenviar_historico'),
     path('conferencia/reenviar-dia/', conferencia_reenviar_dia, name='conferencia_reenviar_dia'),
+    path('conferencia/reenviar-compras/', conferencia_reenviar_compras, name='conferencia_reenviar_compras'),
 ]
 
 if settings.DEBUG:
