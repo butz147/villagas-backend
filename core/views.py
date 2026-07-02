@@ -171,14 +171,23 @@ GOOGLE_SHEETS_CONFERENCIA_URL = "https://script.google.com/macros/s/AKfycbzzKCqu
 
 def enviar_fechamento_google_sheets(loja, data, vendas):
     """Retorna True se enviou com sucesso, False se falhou."""
-    # Agrupa por (produto, preco_unitario) para separar preços diferentes
+    # Agrupa por (produto, preco_unitario) para separar preços diferentes.
+    # Para Gás do Povo, o preço efetivo é valor_pagamento_1 / quantidade.
     grupos = {}
     for v in vendas:
-        chave = (v.produto.nome, float(v.preco_unitario), v.produto)
+        eh_gas_do_povo = v.forma_pagamento_1 == "gas_do_povo"
+        if eh_gas_do_povo:
+            preco_efetivo = float(v.valor_pagamento_1) / v.quantidade if v.quantidade else 0
+            total_efetivo = float(v.valor_pagamento_1)
+        else:
+            preco_efetivo = float(v.preco_unitario)
+            total_efetivo = float(v.quantidade * v.preco_unitario)
+
+        chave = (v.produto.nome, round(preco_efetivo, 2), v.produto)
         if chave not in grupos:
             grupos[chave] = {"qtd": 0, "total": 0.0}
         grupos[chave]["qtd"] += v.quantidade
-        grupos[chave]["total"] += float(v.quantidade * v.preco_unitario)
+        grupos[chave]["total"] += total_efetivo
 
     dinheiro = pix = credito = debito = gas_do_povo = 0.0
     for v in vendas:
