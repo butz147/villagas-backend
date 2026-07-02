@@ -5976,8 +5976,20 @@ def conferencia_reenviar_historico(request):
     if not loja:
         return render(request, "erro_loja.html")
 
+    # Limpa a planilha antes de reenviar (evita duplicatas)
+    try:
+        requests.post(
+            GOOGLE_SHEETS_CONFERENCIA_URL,
+            json={"action": "clear"},
+            headers={"Content-Type": "application/json"},
+            allow_redirects=True,
+            timeout=30,
+        )
+    except Exception as e:
+        print("Erro ao limpar planilha:", e)
+
     # Busca todos os dias que tiveram vendas (com ou sem fechamento formal)
-    dias_com_vendas = (
+    dias_com_vendas = list(
         Venda.objects.filter(loja=loja, status="ativa")
         .values_list("data_venda__date", flat=True)
         .distinct()
@@ -5999,9 +6011,10 @@ def conferencia_reenviar_historico(request):
         else:
             erros += 1
 
+    total_dias = len(dias_com_vendas)
     if erros == 0:
-        mensagem = f"Histórico enviado com sucesso: {enviados} dia(s) na planilha."
+        mensagem = f"Planilha limpa e histórico reenviado: {enviados} de {total_dias} dia(s)."
     else:
-        mensagem = f"{enviados} dia(s) enviados, {erros} dia(s) com erro. Verifique o log do servidor."
+        mensagem = f"{enviados} de {total_dias} dia(s) enviados, {erros} com erro. Verifique o log do servidor."
 
     return render(request, "operacao_bloqueada.html", {"mensagem": mensagem})
