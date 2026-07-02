@@ -172,15 +172,16 @@ GOOGLE_SHEETS_CONFERENCIA_URL = "https://script.google.com/macros/s/AKfycbzzKCqu
 def _linha(data_str, produto="", preco="", qtd="", total="",
            dinheiro="", pix="", credito="", debito="", gas_do_povo="",
            retiradas="", din_liquido="", saldo="",
-           cheio_ini="", cheio_fim="", vazio_ini="", vazio_fim=""):
+           cheio_ini="", vazio_ini="", cheio_fim="", vazio_fim=""):
+    # Ordem colunas estoque: Cheio Ini | Vazio Ini | Cheio Fim | Vazio Fim
     return {
         "data": data_str, "produto": produto, "preco_unitario": preco,
         "qtd_vendida": qtd, "total_vendas": total,
         "dinheiro": dinheiro, "pix": pix, "credito": credito,
         "debito": debito, "gas_do_povo": gas_do_povo,
         "retiradas": retiradas, "din_liquido": din_liquido, "saldo": saldo,
-        "cheio_ini": cheio_ini, "cheio_fim": cheio_fim,
-        "vazio_ini": vazio_ini, "vazio_fim": vazio_fim,
+        "cheio_ini": cheio_ini, "vazio_ini": vazio_ini,
+        "cheio_fim": cheio_fim, "vazio_fim": vazio_fim,
     }
 
 
@@ -229,12 +230,41 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
     ).select_related("funcionario").order_by("data")
     total_retiradas = sum(float(r.valor) for r in retiradas_qs)
 
-    # --- Calcula estoque início do dia por produto ---
-    # saidas_cheio: vendas que removem do estoque cheio
-    # entradas_cheio: movimentações tipo "entrada" do dia
+    # --- Calcula estoque fim do dia reconstruindo a partir do estoque atual ---
+    # Reverte todas as operações que aconteceram DEPOIS de 'data' para obter
+    # o estoque real ao fim daquele dia.
+    produtos_list = list(Produto.objects.filter(loja=loja).order_by("nome"))
+
+    cheio_fim_map = {}
+    vazio_fim_map = {}
+    for p in produtos_list:
+        cheio = p.estoque_cheio
+        vazio = p.estoque_vazio
+
+        # Desfaz vendas posteriores a 'data'
+        for v in Venda.objects.filter(loja=loja, produto=p, data_venda__date__gt=data, status="ativa"):
+            if not p.controla_retorno:
+                cheio += v.quantidade
+            else:
+                if v.tipo_venda in ("troca", "completo"):
+                    cheio += v.quantidade
+                if v.tipo_venda == "troca":
+                    vazio -= v.quantidade
+                elif v.tipo_venda == "casco":
+                    vazio += v.quantidade
+
+        # Desfaz entradas posteriores
+        for m in MovimentacaoEstoque.objects.filter(loja=loja, produto=p, data_movimentacao__date__gt=data, tipo="entrada"):
+            cheio -= m.quantidade
+
+        cheio_fim_map[p.id] = cheio
+        vazio_fim_map[p.id] = vazio
+
+    # Saídas/entradas do próprio dia para calcular o início
     saidas_cheio = {}
+    entradas_cheio = {}
     saidas_vazio = {}
-    entradas_vazio = {}  # troca: cliente devolve vazio
+    entradas_vazio = {}
 
     for v in vendas:
         pid = v.produto_id
@@ -248,7 +278,6 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
             elif v.tipo_venda == "casco":
                 saidas_vazio[pid] = saidas_vazio.get(pid, 0) + v.quantidade
 
-    entradas_cheio = {}
     for m in MovimentacaoEstoque.objects.filter(loja=loja, data_movimentacao__date=data, tipo="entrada"):
         entradas_cheio[m.produto_id] = entradas_cheio.get(m.produto_id, 0) + m.quantidade
 
@@ -285,15 +314,16 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
                              retiradas=round(float(r.valor), 2)))
 
     # --- Linhas de estoque (início e fim do dia) ---
-    for produto_obj in Produto.objects.filter(loja=loja).order_by("nome"):
-        pid = produto_obj.id
-        cheio_fim = produto_obj.estoque_cheio
-        vazio_fim = produto_obj.estoque_vazio
+    # Colunas: Cheio Ini | Vazio Ini | Cheio Fim | Vazio Fim
+    for p in produtos_list:
+        pid = p.id
+        cheio_fim = cheio_fim_map.get(pid, p.estoque_cheio)
+        vazio_fim = vazio_fim_map.get(pid, p.estoque_vazio)
         cheio_ini = cheio_fim + saidas_cheio.get(pid, 0) - entradas_cheio.get(pid, 0)
         vazio_ini = vazio_fim - entradas_vazio.get(pid, 0) + saidas_vazio.get(pid, 0)
-        linhas.append(_linha(data_str, produto=f"  ESTOQUE {produto_obj.nome}",
-                             cheio_ini=cheio_ini, cheio_fim=cheio_fim,
-                             vazio_ini=vazio_ini, vazio_fim=vazio_fim))
+        linhas.append(_linha(data_str, produto=f"  ESTOQUE {p.nome}",
+                             cheio_ini=cheio_ini, vazio_ini=vazio_ini,
+                             cheio_fim=cheio_fim, vazio_fim=vazio_fim))
 
     try:
         resp = requests.post(
