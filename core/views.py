@@ -5694,17 +5694,17 @@ def conferencia_excel(request):
     # --- Seção 2: Pagamentos ---
     ws.append(["PAGAMENTOS"])
     ws[f"A{ws.max_row}"].font = bold
-    ws.append(["Forma", "Sistema", "Físico (preencher)"])
+    ws.append(["Forma", "Total"])
     for cell in ws[ws.max_row]:
         cell.font = bold
 
     total_pagto = 0
     for nome_pagto, valor in totais_pagto.items():
         if valor > 0:
-            ws.append([nome_pagto, valor, ""])
+            ws.append([nome_pagto, valor])
             total_pagto += valor
 
-    ws.append(["TOTAL", total_pagto, ""])
+    ws.append(["TOTAL", total_pagto])
     for cell in ws[ws.max_row]:
         cell.font = bold
 
@@ -5713,12 +5713,12 @@ def conferencia_excel(request):
     # --- Seção 3: Estoque ---
     ws.append(["ESTOQUE"])
     ws[f"A{ws.max_row}"].font = bold
-    ws.append(["Produto", "Cheio Sistema", "Cheio Físico", "Vazio Sistema", "Vazio Físico"])
+    ws.append(["Produto", "Cheio", "Vazio"])
     for cell in ws[ws.max_row]:
         cell.font = bold
 
     for p in produtos:
-        ws.append([p.nome, p.estoque_cheio, "", p.estoque_vazio, ""])
+        ws.append([p.nome, p.estoque_cheio, p.estoque_vazio])
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
