@@ -5625,203 +5625,105 @@ def conferencia_excel(request):
         data_inicial = hoje
         data_final = hoje
 
-    vendas = Venda.objects.filter(
+    vendas_ativas = Venda.objects.filter(
         loja=loja,
         data_venda__date__gte=data_inicial,
         data_venda__date__lte=data_final,
-    ).select_related("produto", "funcionario", "cliente").order_by("data_venda")
-
-    movimentacoes = MovimentacaoEstoque.objects.filter(
-        loja=loja,
-        data_movimentacao__date__gte=data_inicial,
-        data_movimentacao__date__lte=data_final,
-    ).select_related("produto", "usuario").order_by("data_movimentacao")
-
-    retiradas = RetiradaFuncionario.objects.filter(
-        loja=loja,
-        data__date__gte=data_inicial,
-        data__date__lte=data_final,
-    ).select_related("funcionario", "registrado_por").order_by("data")
+        status="ativa",
+    ).select_related("produto").order_by("produto__nome", "preco_unitario")
 
     produtos = Produto.objects.filter(loja=loja).order_by("nome")
 
+    # --- Agrupa vendas por (produto, preco) ---
+    vendas_agrupadas = {}
+    for v in vendas_ativas:
+        chave = (v.produto.nome, float(v.preco_unitario))
+        if chave not in vendas_agrupadas:
+            vendas_agrupadas[chave] = 0
+        vendas_agrupadas[chave] += v.quantidade
+
+    # --- Soma pagamentos ---
+    totais_pagto = {"Dinheiro": 0, "PIX": 0, "Crédito": 0, "Débito": 0, "Gás do Povo": 0, "Fiado": 0, "Vale Gás": 0}
+    mapa_pagto = {"dinheiro": "Dinheiro", "pix": "PIX", "credito": "Crédito", "debito": "Débito",
+                  "gas_do_povo": "Gás do Povo", "fiado": "Fiado", "vale_gas": "Vale Gás"}
+    for v in vendas_ativas:
+        for forma, valor in [(v.forma_pagamento_1, v.valor_pagamento_1), (v.forma_pagamento_2, v.valor_pagamento_2)]:
+            if forma and valor:
+                nome = mapa_pagto.get(forma)
+                if nome:
+                    totais_pagto[nome] += float(valor)
+
     wb = Workbook()
     bold = Font(bold=True)
+    ws = wb.active
+    ws.title = "Conferência"
 
-    # --- Aba 1: Estoque para conferência ---
-    ws_estoque = wb.active
-    ws_estoque.title = "Estoque"
+    periodo = (
+        data_inicial.strftime("%d/%m/%Y")
+        if data_inicial == data_final
+        else f"{data_inicial.strftime('%d/%m/%Y')} a {data_final.strftime('%d/%m/%Y')}"
+    )
 
-    cabecalho_estoque = ["Produto", "Cheio (Sistema)", "Vazio (Sistema)", "Cheio (Físico)", "Vazio (Físico)", "Diferença Cheio", "Diferença Vazio"]
-    ws_estoque.append(cabecalho_estoque)
-    for cell in ws_estoque[1]:
+    # --- Cabeçalho ---
+    ws.append([f"CONFERÊNCIA — {loja.nome.upper()}", "", f"Período: {periodo}"])
+    ws["A1"].font = bold
+    ws.append([f"Gerado em: {timezone.localtime().strftime('%d/%m/%Y %H:%M')}"])
+    ws.append([])
+
+    # --- Seção 1: Vendas por produto e preço ---
+    ws.append(["VENDAS POR PRODUTO"])
+    ws[f"A{ws.max_row}"].font = bold
+    ws.append(["Produto", "Preço Unit.", "Qtd Vendida", "Total"])
+    for cell in ws[ws.max_row]:
+        cell.font = bold
+
+    total_geral_vendas = 0
+    total_geral_qtd = 0
+    for (nome_prod, preco), qtd in sorted(vendas_agrupadas.items()):
+        total_linha = qtd * preco
+        total_geral_vendas += total_linha
+        total_geral_qtd += qtd
+        ws.append([nome_prod, preco, qtd, total_linha])
+
+    ws.append(["TOTAL", "", total_geral_qtd, total_geral_vendas])
+    for cell in ws[ws.max_row]:
+        cell.font = bold
+
+    ws.append([])
+
+    # --- Seção 2: Pagamentos ---
+    ws.append(["PAGAMENTOS"])
+    ws[f"A{ws.max_row}"].font = bold
+    ws.append(["Forma", "Sistema", "Físico (preencher)"])
+    for cell in ws[ws.max_row]:
+        cell.font = bold
+
+    total_pagto = 0
+    for nome_pagto, valor in totais_pagto.items():
+        if valor > 0:
+            ws.append([nome_pagto, valor, ""])
+            total_pagto += valor
+
+    ws.append(["TOTAL", total_pagto, ""])
+    for cell in ws[ws.max_row]:
+        cell.font = bold
+
+    ws.append([])
+
+    # --- Seção 3: Estoque ---
+    ws.append(["ESTOQUE"])
+    ws[f"A{ws.max_row}"].font = bold
+    ws.append(["Produto", "Cheio Sistema", "Cheio Físico", "Vazio Sistema", "Vazio Físico"])
+    for cell in ws[ws.max_row]:
         cell.font = bold
 
     for p in produtos:
-        ws_estoque.append([
-            p.nome,
-            p.estoque_cheio,
-            p.estoque_vazio,
-            "",
-            "",
-            "",
-            "",
-        ])
-
-    ws_estoque.append([])
-    ws_estoque.append(["Instruções: preencha as colunas 'Físico' com a contagem real. As diferenças serão calculadas subtraindo Sistema - Físico."])
-    ws_estoque.append([f"Gerado em: {timezone.localtime().strftime('%d/%m/%Y %H:%M')} | Período: {data_inicial.strftime('%d/%m/%Y')} a {data_final.strftime('%d/%m/%Y')}"])
-
-    # --- Aba 2: Vendas ---
-    ws_vendas = wb.create_sheet("Vendas")
-    cabecalho_vendas = [
-        "ID", "Data", "Hora", "Funcionário", "Cliente",
-        "Produto", "Tipo", "Qtd", "Preço Unit.", "Total",
-        "Pagto 1", "Valor 1", "Pagto 2", "Valor 2", "Status",
-    ]
-    ws_vendas.append(cabecalho_vendas)
-    for cell in ws_vendas[1]:
-        cell.font = bold
-
-    total_vendas = 0
-    vendas_ativas = 0
-    vendas_canceladas = 0
-    for v in vendas:
-        total_venda = float(v.quantidade * v.preco_unitario)
-        if v.status == "ativa":
-            total_vendas += total_venda
-            vendas_ativas += 1
-        else:
-            vendas_canceladas += 1
-        ws_vendas.append([
-            v.id,
-            v.data_venda.strftime("%d/%m/%Y"),
-            v.data_venda.strftime("%H:%M"),
-            v.funcionario.username,
-            v.cliente.nome if v.cliente else "Sem cliente",
-            v.produto.nome,
-            v.get_tipo_venda_display(),
-            v.quantidade,
-            float(v.preco_unitario),
-            total_venda,
-            v.get_forma_pagamento_1_display(),
-            float(v.valor_pagamento_1 or 0),
-            v.get_forma_pagamento_2_display() if v.forma_pagamento_2 else "",
-            float(v.valor_pagamento_2 or 0) if v.valor_pagamento_2 else "",
-            "ATIVA" if v.status == "ativa" else "CANCELADA",
-        ])
-
-    ws_vendas.append([])
-    ws_vendas.append(["", "", "", "", "", "", "", "", "TOTAL ATIVAS →", total_vendas])
-    ws_vendas.append(["", "", "", "", "", "", "", "", "Vendas ativas:", vendas_ativas, "", "", "", "", f"Canceladas: {vendas_canceladas}"])
-
-    # --- Aba 3: Caixa (resumo de pagamentos) ---
-    ws_caixa = wb.create_sheet("Caixa")
-
-    dinheiro = pix = credito = debito = gas_do_povo = fiado = vale_gas_total = 0
-    for v in vendas:
-        if v.status != "ativa":
-            continue
-        for forma, valor in [(v.forma_pagamento_1, v.valor_pagamento_1), (v.forma_pagamento_2, v.valor_pagamento_2)]:
-            if not forma or not valor:
-                continue
-            val = float(valor)
-            if forma == "dinheiro":
-                dinheiro += val
-            elif forma == "pix":
-                pix += val
-            elif forma == "credito":
-                credito += val
-            elif forma == "debito":
-                debito += val
-            elif forma == "gas_do_povo":
-                gas_do_povo += val
-            elif forma == "fiado":
-                fiado += val
-            elif forma == "vale_gas":
-                vale_gas_total += val
-
-    ws_caixa.append(["RESUMO DE CAIXA"])
-    ws_caixa["A1"].font = bold
-    ws_caixa.append([f"Período: {data_inicial.strftime('%d/%m/%Y')} a {data_final.strftime('%d/%m/%Y')}"])
-    ws_caixa.append([f"Loja: {loja.nome}"])
-    ws_caixa.append([])
-
-    cabecalho_caixa = ["Forma de Pagamento", "Total (Sistema)", "Total (Físico)", "Diferença"]
-    ws_caixa.append(cabecalho_caixa)
-    for cell in ws_caixa[5]:
-        cell.font = bold
-
-    linhas_caixa = [
-        ("Dinheiro", dinheiro),
-        ("PIX", pix),
-        ("Crédito", credito),
-        ("Débito", debito),
-        ("Gás do Povo", gas_do_povo),
-        ("Fiado", fiado),
-        ("Vale Gás", vale_gas_total),
-    ]
-    for nome_pagto, valor_sistema in linhas_caixa:
-        ws_caixa.append([nome_pagto, valor_sistema, "", ""])
-
-    ws_caixa.append([])
-    total_geral = dinheiro + pix + credito + debito + gas_do_povo + fiado + vale_gas_total
-    ws_caixa.append(["TOTAL GERAL", total_geral, "", ""])
-    for cell in ws_caixa[ws_caixa.max_row]:
-        cell.font = bold
-
-    ws_caixa.append([])
-    ws_caixa.append(["Instruções: preencha 'Total Físico' com o valor contado/recebido. A diferença indica divergências."])
-
-    # --- Aba 4: Movimentações de Estoque ---
-    ws_mov = wb.create_sheet("Movimentações")
-    cabecalho_mov = ["ID", "Data", "Hora", "Produto", "Tipo", "Quantidade", "Motivo", "Usuário"]
-    ws_mov.append(cabecalho_mov)
-    for cell in ws_mov[1]:
-        cell.font = bold
-
-    for m in movimentacoes:
-        ws_mov.append([
-            m.id,
-            m.data_movimentacao.strftime("%d/%m/%Y"),
-            m.data_movimentacao.strftime("%H:%M"),
-            m.produto.nome,
-            m.get_tipo_display(),
-            m.quantidade,
-            m.motivo or "",
-            m.usuario.username,
-        ])
-
-    # --- Aba 5: Retiradas de Funcionários ---
-    ws_ret = wb.create_sheet("Retiradas")
-    cabecalho_ret = ["ID", "Data", "Hora", "Funcionário", "Tipo", "Valor", "Descrição", "Registrado por"]
-    ws_ret.append(cabecalho_ret)
-    for cell in ws_ret[1]:
-        cell.font = bold
-
-    total_retiradas = 0
-    for r in retiradas:
-        total_retiradas += float(r.valor)
-        ws_ret.append([
-            r.id,
-            r.data.strftime("%d/%m/%Y"),
-            r.data.strftime("%H:%M"),
-            r.funcionario.username if r.funcionario else "",
-            r.get_tipo_display(),
-            float(r.valor),
-            r.descricao or "",
-            r.registrado_por.username if r.registrado_por else "",
-        ])
-
-    ws_ret.append([])
-    ws_ret.append(["", "", "", "", "TOTAL RETIRADAS →", total_retiradas])
-    for cell in ws_ret[ws_ret.max_row]:
-        cell.font = bold
+        ws.append([p.nome, p.estoque_cheio, "", p.estoque_vazio, ""])
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    nome_arquivo = f"conferencia_{loja.nome.lower().replace(' ', '_')}_{data_inicial.strftime('%Y%m%d')}_{data_final.strftime('%Y%m%d')}.xlsx"
+    nome_arquivo = f"conferencia_{data_inicial.strftime('%Y%m%d')}.xlsx"
     response["Content-Disposition"] = f'attachment; filename="{nome_arquivo}"'
     wb.save(response)
     return response
