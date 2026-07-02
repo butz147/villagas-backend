@@ -169,10 +169,26 @@ def somar_pagamentos_pedidos(pedidos):
 GOOGLE_SHEETS_CONFERENCIA_URL = "https://script.google.com/macros/s/AKfycbzzKCquilK-2as85ZdVv3cT0m-PujpFww3_aW4Ik77TjDzqJqvTZU6QegCRD0ZnBYMDoA/exec"
 
 
+def _linha(data_str, produto="", preco="", qtd="", total="",
+           dinheiro="", pix="", credito="", debito="", gas_do_povo="",
+           retiradas="", din_liquido="", saldo="",
+           cheio_ini="", cheio_fim="", vazio_ini="", vazio_fim=""):
+    return {
+        "data": data_str, "produto": produto, "preco_unitario": preco,
+        "qtd_vendida": qtd, "total_vendas": total,
+        "dinheiro": dinheiro, "pix": pix, "credito": credito,
+        "debito": debito, "gas_do_povo": gas_do_povo,
+        "retiradas": retiradas, "din_liquido": din_liquido, "saldo": saldo,
+        "cheio_ini": cheio_ini, "cheio_fim": cheio_fim,
+        "vazio_ini": vazio_ini, "vazio_fim": vazio_fim,
+    }
+
+
 def enviar_fechamento_google_sheets(loja, data, vendas):
     """Retorna True se enviou com sucesso, False se falhou."""
-    # Agrupa por (produto, preco_unitario) para separar preços diferentes.
-    # Para Gás do Povo, o preço efetivo é valor_pagamento_1 / quantidade.
+    vendas = list(vendas.select_related("produto"))
+
+    # --- Agrupa vendas por (produto, preco_efetivo) ---
     grupos = {}
     for v in vendas:
         eh_gas_do_povo = v.forma_pagamento_1 == "gas_do_povo"
@@ -189,7 +205,8 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
         grupos[chave]["qtd"] += v.quantidade
         grupos[chave]["total"] += total_efetivo
 
-    dinheiro = pix = credito = debito = gas_do_povo = 0.0
+    # --- Soma pagamentos ---
+    dinheiro = pix = credito = debito = gas_do_povo_val = 0.0
     for v in vendas:
         for forma, valor in [(v.forma_pagamento_1, v.valor_pagamento_1), (v.forma_pagamento_2, v.valor_pagamento_2)]:
             if not forma or not valor:
@@ -204,82 +221,79 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
             elif forma == "debito":
                 debito += val
             elif forma == "gas_do_povo":
-                gas_do_povo += val
+                gas_do_povo_val += val
 
+    # --- Retiradas ---
     retiradas_qs = RetiradaFuncionario.objects.filter(
         loja=loja, data__date=data
     ).select_related("funcionario").order_by("data")
-
     total_retiradas = sum(float(r.valor) for r in retiradas_qs)
+
+    # --- Calcula estoque início do dia por produto ---
+    # saidas_cheio: vendas que removem do estoque cheio
+    # entradas_cheio: movimentações tipo "entrada" do dia
+    saidas_cheio = {}
+    saidas_vazio = {}
+    entradas_vazio = {}  # troca: cliente devolve vazio
+
+    for v in vendas:
+        pid = v.produto_id
+        if not v.produto.controla_retorno:
+            saidas_cheio[pid] = saidas_cheio.get(pid, 0) + v.quantidade
+        else:
+            if v.tipo_venda in ("troca", "completo"):
+                saidas_cheio[pid] = saidas_cheio.get(pid, 0) + v.quantidade
+            if v.tipo_venda == "troca":
+                entradas_vazio[pid] = entradas_vazio.get(pid, 0) + v.quantidade
+            elif v.tipo_venda == "casco":
+                saidas_vazio[pid] = saidas_vazio.get(pid, 0) + v.quantidade
+
+    entradas_cheio = {}
+    for m in MovimentacaoEstoque.objects.filter(loja=loja, data_movimentacao__date=data, tipo="entrada"):
+        entradas_cheio[m.produto_id] = entradas_cheio.get(m.produto_id, 0) + m.quantidade
 
     data_str = data.strftime("%d/%m/%Y")
     linhas = []
 
+    # --- Linhas de produtos vendidos ---
     for (nome, preco, produto_obj), info in sorted(grupos.items()):
-        linhas.append({
-            "data": data_str,
-            "produto": nome,
-            "preco_unitario": preco,
-            "qtd_vendida": info["qtd"],
-            "total_vendas": round(info["total"], 2),
-            "dinheiro": "",
-            "pix": "",
-            "credito": "",
-            "debito": "",
-            "gas_do_povo": "",
-            "retiradas": "",
-            "din_liquido": "",
-            "saldo": "",
-            "estoque_cheio": produto_obj.estoque_cheio,
-            "estoque_vazio": produto_obj.estoque_vazio,
-        })
+        linhas.append(_linha(data_str, produto=nome, preco=preco,
+                             qtd=info["qtd"], total=round(info["total"], 2)))
 
+    # --- Linha de pagamentos ---
     total_dia = round(sum(i["total"] for i in grupos.values()), 2)
     dinheiro_r = round(dinheiro, 2)
-    saldo = round(dinheiro_r + pix + credito + debito + gas_do_povo - total_dia, 2)
+    saldo = round(dinheiro_r + pix + credito + debito + gas_do_povo_val - total_dia, 2)
     din_liquido = round(dinheiro_r - total_retiradas, 2)
 
-    linhas.append({
-        "data": data_str,
-        "produto": "--- PAGAMENTOS ---",
-        "preco_unitario": "",
-        "qtd_vendida": "",
-        "total_vendas": total_dia,
-        "dinheiro": dinheiro_r,
-        "pix": round(pix, 2),
-        "credito": round(credito, 2),
-        "debito": round(debito, 2),
-        "gas_do_povo": round(gas_do_povo, 2),
-        "retiradas": round(total_retiradas, 2),
-        "din_liquido": din_liquido,
-        "saldo": saldo,
-        "estoque_cheio": "",
-        "estoque_vazio": "",
-    })
+    linhas.append(_linha(data_str, produto="--- PAGAMENTOS ---",
+                         total=total_dia,
+                         dinheiro=dinheiro_r, pix=round(pix, 2),
+                         credito=round(credito, 2), debito=round(debito, 2),
+                         gas_do_povo=round(gas_do_povo_val, 2),
+                         retiradas=round(total_retiradas, 2),
+                         din_liquido=din_liquido, saldo=saldo))
 
+    # --- Linhas de retiradas detalhadas ---
     for r in retiradas_qs:
-        funcionario_nome = r.funcionario.username if r.funcionario else "?"
+        func_nome = r.funcionario.username if r.funcionario else "?"
         descricao = r.descricao.strip() if r.descricao else ""
-        label = f"  → {r.get_tipo_display()} — {funcionario_nome}"
+        label = f"  → {r.get_tipo_display()} — {func_nome}"
         if descricao:
             label += f": {descricao}"
-        linhas.append({
-            "data": data_str,
-            "produto": label,
-            "preco_unitario": "",
-            "qtd_vendida": "",
-            "total_vendas": "",
-            "dinheiro": "",
-            "pix": "",
-            "credito": "",
-            "debito": "",
-            "gas_do_povo": "",
-            "retiradas": round(float(r.valor), 2),
-            "din_liquido": "",
-            "saldo": "",
-            "estoque_cheio": "",
-            "estoque_vazio": "",
-        })
+        linhas.append(_linha(data_str, produto=label,
+                             retiradas=round(float(r.valor), 2)))
+
+    # --- Linhas de estoque (início e fim do dia) ---
+    for produto_obj in Produto.objects.filter(loja=loja).order_by("nome"):
+        pid = produto_obj.id
+        cheio_fim = produto_obj.estoque_cheio
+        vazio_fim = produto_obj.estoque_vazio
+        cheio_ini = cheio_fim + saidas_cheio.get(pid, 0) - entradas_cheio.get(pid, 0)
+        vazio_ini = vazio_fim - entradas_vazio.get(pid, 0) + saidas_vazio.get(pid, 0)
+        linhas.append(_linha(data_str, produto=f"  ESTOQUE {produto_obj.nome}",
+                             cheio_ini=cheio_ini, cheio_fim=cheio_fim,
+                             vazio_ini=vazio_ini, vazio_fim=vazio_fim))
 
     try:
         resp = requests.post(
