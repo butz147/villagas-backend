@@ -196,10 +196,11 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
             elif forma == "gas_do_povo":
                 gas_do_povo += val
 
-    total_retiradas = float(
-        RetiradaFuncionario.objects.filter(loja=loja, data__date=data)
-        .aggregate(total=models.Sum("valor"))["total"] or 0
-    )
+    retiradas_qs = RetiradaFuncionario.objects.filter(
+        loja=loja, data__date=data
+    ).select_related("funcionario").order_by("data")
+
+    total_retiradas = sum(float(r.valor) for r in retiradas_qs)
 
     data_str = data.strftime("%d/%m/%Y")
     linhas = []
@@ -217,14 +218,16 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
             "debito": "",
             "gas_do_povo": "",
             "retiradas": "",
+            "din_liquido": "",
             "saldo": "",
             "estoque_cheio": produto_obj.estoque_cheio,
             "estoque_vazio": produto_obj.estoque_vazio,
         })
 
     total_dia = round(sum(i["total"] for i in grupos.values()), 2)
-    total_pagto = round(dinheiro + pix + credito + debito + gas_do_povo, 2)
-    saldo = round(total_pagto - total_retiradas - total_dia, 2)
+    dinheiro_r = round(dinheiro, 2)
+    saldo = round(dinheiro_r + pix + credito + debito + gas_do_povo - total_dia, 2)
+    din_liquido = round(dinheiro_r - total_retiradas, 2)
 
     linhas.append({
         "data": data_str,
@@ -232,16 +235,41 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
         "preco_unitario": "",
         "qtd_vendida": "",
         "total_vendas": total_dia,
-        "dinheiro": round(dinheiro, 2),
+        "dinheiro": dinheiro_r,
         "pix": round(pix, 2),
         "credito": round(credito, 2),
         "debito": round(debito, 2),
         "gas_do_povo": round(gas_do_povo, 2),
         "retiradas": round(total_retiradas, 2),
+        "din_liquido": din_liquido,
         "saldo": saldo,
         "estoque_cheio": "",
         "estoque_vazio": "",
     })
+
+    for r in retiradas_qs:
+        funcionario_nome = r.funcionario.username if r.funcionario else "?"
+        descricao = r.descricao.strip() if r.descricao else ""
+        label = f"  → {r.get_tipo_display()} — {funcionario_nome}"
+        if descricao:
+            label += f": {descricao}"
+        linhas.append({
+            "data": data_str,
+            "produto": label,
+            "preco_unitario": "",
+            "qtd_vendida": "",
+            "total_vendas": "",
+            "dinheiro": "",
+            "pix": "",
+            "credito": "",
+            "debito": "",
+            "gas_do_povo": "",
+            "retiradas": round(float(r.valor), 2),
+            "din_liquido": "",
+            "saldo": "",
+            "estoque_cheio": "",
+            "estoque_vazio": "",
+        })
 
     try:
         requests.post(GOOGLE_SHEETS_CONFERENCIA_URL, json={"linhas": linhas}, timeout=10)
