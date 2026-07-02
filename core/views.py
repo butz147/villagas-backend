@@ -3783,16 +3783,96 @@ def relatorio_vendas(request):
         data_inicial = hoje
         data_final = hoje
 
-    vendas = Venda.objects.filter(
+    vendas = list(Venda.objects.filter(
         loja=loja,
         data_venda__date__gte=data_inicial,
         data_venda__date__lte=data_final,
-    ).order_by("-data_venda").select_related("produto", "funcionario", "cliente")
+    ).order_by("-data_venda").select_related("produto", "funcionario", "cliente"))
 
-    total_geral = 0
-    for venda in vendas:
-        if venda.status == "ativa":
-            total_geral += float(venda.quantidade * venda.preco_unitario)
+    vendas_ativas = [v for v in vendas if v.status == "ativa"]
+
+    total_geral = sum(float(v.quantidade * v.preco_unitario) for v in vendas_ativas)
+
+    # --- Resumo por produto ---
+    produtos_map = {}
+    for v in vendas_ativas:
+        pid = v.produto_id
+        if pid not in produtos_map:
+            produtos_map[pid] = {"nome": v.produto.nome, "qty": 0, "total": Decimal("0")}
+        produtos_map[pid]["qty"] += v.quantidade
+        produtos_map[pid]["total"] += Decimal(v.quantidade) * v.preco_unitario
+    produtos_resumo = sorted(produtos_map.values(), key=lambda x: x["nome"])
+
+    # --- Resumo por forma de pagamento ---
+    nomes_pag = dict(Venda.PAGAMENTO)
+    pag_map = {}
+    for v in vendas_ativas:
+        f1 = v.forma_pagamento_1
+        pag_map[f1] = pag_map.get(f1, Decimal("0")) + (v.valor_pagamento_1 or Decimal("0"))
+        if v.forma_pagamento_2 and v.valor_pagamento_2:
+            f2 = v.forma_pagamento_2
+            pag_map[f2] = pag_map.get(f2, Decimal("0")) + v.valor_pagamento_2
+    pagamentos_resumo = sorted(
+        [{"forma": k, "nome": nomes_pag.get(k, k), "total": v} for k, v in pag_map.items() if v > 0],
+        key=lambda x: x["nome"]
+    )
+
+    # --- Estoque início/fim (apenas hoje e ontem) ---
+    def _delta_movimentos(vendas_list, compras_list):
+        d = {}
+        for v in vendas_list:
+            pid = v.produto_id
+            if pid not in d:
+                d[pid] = {"cheio": 0, "vazio": 0}
+            if v.tipo_venda in ("normal", "troca", "completo"):
+                d[pid]["cheio"] -= v.quantidade
+            elif v.tipo_venda == "casco":
+                d[pid]["vazio"] -= v.quantidade
+            if v.tipo_venda == "troca":
+                d[pid]["vazio"] += v.quantidade
+        for c in compras_list:
+            pid = c.produto_id
+            if pid not in d:
+                d[pid] = {"cheio": 0, "vazio": 0}
+            if c.cheios_entram or c.cheios_saem or c.vazios_entram or c.vazios_saem:
+                d[pid]["cheio"] += c.cheios_entram - c.cheios_saem
+                d[pid]["vazio"] += c.vazios_entram - c.vazios_saem
+            else:
+                d[pid]["cheio"] += c.quantidade
+                if c.tipo_compra == "troca":
+                    d[pid]["vazio"] -= c.quantidade
+        return d
+
+    estoque_periodo = None
+    if filtro in ("hoje", "ontem"):
+        compras_periodo = list(CompraEstoque.objects.filter(
+            loja=loja,
+            data__date__gte=data_inicial,
+            data__date__lte=data_final,
+            status__in=["pendente", "aprovada"],
+        ))
+        delta_p = _delta_movimentos(vendas_ativas, compras_periodo)
+
+        delta_hoje = {}
+        if filtro == "ontem":
+            v_hoje = list(Venda.objects.filter(loja=loja, data_venda__date=hoje, status="ativa").select_related("produto"))
+            c_hoje = list(CompraEstoque.objects.filter(loja=loja, data__date=hoje, status__in=["pendente", "aprovada"]))
+            delta_hoje = _delta_movimentos(v_hoje, c_hoje)
+
+        estoque_periodo = []
+        for p in Produto.objects.filter(loja=loja).order_by("nome"):
+            pid = p.id
+            dh = delta_hoje.get(pid, {"cheio": 0, "vazio": 0})
+            dp = delta_p.get(pid, {"cheio": 0, "vazio": 0})
+            fim_cheio = p.estoque_cheio - dh["cheio"]
+            fim_vazio = p.estoque_vazio - dh["vazio"]
+            estoque_periodo.append({
+                "nome": p.nome,
+                "inicio_cheio": fim_cheio - dp["cheio"],
+                "inicio_vazio": fim_vazio - dp["vazio"],
+                "fim_cheio": fim_cheio,
+                "fim_vazio": fim_vazio,
+            })
 
     return render(request, "relatorio.html", {
         "loja": loja,
@@ -3801,6 +3881,10 @@ def relatorio_vendas(request):
         "filtro": filtro,
         "data_inicial": data_inicial,
         "data_final": data_final,
+        "produtos_resumo": produtos_resumo,
+        "pagamentos_resumo": pagamentos_resumo,
+        "estoque_periodo": estoque_periodo,
+        "quantidade_vendas": len(vendas_ativas),
     })
 
 @login_required

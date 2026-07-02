@@ -43,9 +43,91 @@
         <div class="metric-icon">📈</div>
         <h3>Total do período</h3>
         <div class="value">R$ {{ total_geral }}</div>
-        <p>{{ vendas|length }} venda{{ vendas|length|pluralize:"s" }}</p>
+        <p>{{ quantidade_vendas }} venda{{ quantidade_vendas|pluralize:"s" }}</p>
     </div>
 </div>
+
+{% if produtos_resumo %}
+<div class="grid">
+    <div class="card">
+        <div class="section-title">Produtos vendidos</div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Quantidade</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in produtos_resumo %}
+                    <tr>
+                        <td>{{ p.nome }}</td>
+                        <td><strong>{{ p.qty }}</strong></td>
+                        <td>R$ {{ p.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Formas de pagamento</div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Forma</th>
+                        <th>Total recebido</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pag in pagamentos_resumo %}
+                    <tr>
+                        <td>{{ pag.nome }}</td>
+                        <td><strong>R$ {{ pag.total }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="2">Nenhum pagamento.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if estoque_periodo %}
+<div class="card">
+    <div class="section-title">Estoque — início e fim do dia</div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Início cheio</th>
+                    <th>Início vazio</th>
+                    <th>Fim cheio</th>
+                    <th>Fim vazio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in estoque_periodo %}
+                <tr>
+                    <td>{{ e.nome }}</td>
+                    <td>{{ e.inicio_cheio }}</td>
+                    <td>{{ e.inicio_vazio }}</td>
+                    <td><strong>{{ e.fim_cheio }}</strong></td>
+                    <td><strong>{{ e.fim_vazio }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 
 <div class="card">
     <div class="section-title">Vendas</div>
