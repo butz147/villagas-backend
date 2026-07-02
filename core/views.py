@@ -5840,3 +5840,32 @@ def conferencia_excel(request):
     response["Content-Disposition"] = f'attachment; filename="{nome_arquivo}"'
     wb.save(response)
     return response
+
+
+@login_required
+def conferencia_reenviar_historico(request):
+    if not usuario_eh_gerente_ou_admin(request.user):
+        return render(request, "operacao_bloqueada.html", {
+            "mensagem": "Apenas gerente ou admin podem reenviar o histórico."
+        })
+
+    loja = obter_loja_usuario(request.user)
+    if not loja:
+        return render(request, "erro_loja.html")
+
+    fechamentos = FechamentoCaixa.objects.filter(loja=loja).order_by("data")
+
+    enviados = 0
+    for fechamento in fechamentos:
+        vendas_dia = Venda.objects.filter(
+            loja=loja,
+            data_venda__date=fechamento.data,
+            status="ativa",
+        ).select_related("produto")
+
+        enviar_fechamento_google_sheets(loja, fechamento.data, vendas_dia)
+        enviados += 1
+
+    return render(request, "operacao_bloqueada.html", {
+        "mensagem": f"Histórico reenviado com sucesso: {enviados} dia(s) enviados para o Google Sheets."
+    })
