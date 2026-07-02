@@ -170,13 +170,14 @@ GOOGLE_SHEETS_CONFERENCIA_URL = "https://script.google.com/macros/s/AKfycbzzKCqu
 
 
 def enviar_fechamento_google_sheets(loja, data, vendas):
-    produtos_map = {}
+    # Agrupa por (produto, preco_unitario) para separar preços diferentes
+    grupos = {}
     for v in vendas:
-        nome = v.produto.nome
-        if nome not in produtos_map:
-            produtos_map[nome] = {"qtd": 0, "total": 0.0, "produto_obj": v.produto}
-        produtos_map[nome]["qtd"] += v.quantidade
-        produtos_map[nome]["total"] += float(v.quantidade * v.preco_unitario)
+        chave = (v.produto.nome, float(v.preco_unitario), v.produto)
+        if chave not in grupos:
+            grupos[chave] = {"qtd": 0, "total": 0.0}
+        grupos[chave]["qtd"] += v.quantidade
+        grupos[chave]["total"] += float(v.quantidade * v.preco_unitario)
 
     dinheiro = pix = credito = debito = gas_do_povo = 0.0
     for v in vendas:
@@ -195,14 +196,19 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
             elif forma == "gas_do_povo":
                 gas_do_povo += val
 
+    total_retiradas = float(
+        RetiradaFuncionario.objects.filter(loja=loja, data__date=data)
+        .aggregate(total=models.Sum("valor"))["total"] or 0
+    )
+
     data_str = data.strftime("%d/%m/%Y")
     linhas = []
 
-    for nome, info in sorted(produtos_map.items()):
-        p = info["produto_obj"]
+    for (nome, preco, produto_obj), info in sorted(grupos.items()):
         linhas.append({
             "data": data_str,
             "produto": nome,
+            "preco_unitario": preco,
             "qtd_vendida": info["qtd"],
             "total_vendas": round(info["total"], 2),
             "dinheiro": "",
@@ -210,14 +216,20 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
             "credito": "",
             "debito": "",
             "gas_do_povo": "",
-            "estoque_cheio": p.estoque_cheio,
-            "estoque_vazio": p.estoque_vazio,
+            "retiradas": "",
+            "saldo": "",
+            "estoque_cheio": produto_obj.estoque_cheio,
+            "estoque_vazio": produto_obj.estoque_vazio,
         })
 
-    total_dia = round(dinheiro + pix + credito + debito + gas_do_povo, 2)
+    total_dia = round(sum(i["total"] for i in grupos.values()), 2)
+    total_pagto = round(dinheiro + pix + credito + debito + gas_do_povo, 2)
+    saldo = round(total_pagto - total_retiradas - total_dia, 2)
+
     linhas.append({
         "data": data_str,
         "produto": "--- PAGAMENTOS ---",
+        "preco_unitario": "",
         "qtd_vendida": "",
         "total_vendas": total_dia,
         "dinheiro": round(dinheiro, 2),
@@ -225,6 +237,8 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
         "credito": round(credito, 2),
         "debito": round(debito, 2),
         "gas_do_povo": round(gas_do_povo, 2),
+        "retiradas": round(total_retiradas, 2),
+        "saldo": saldo,
         "estoque_cheio": "",
         "estoque_vazio": "",
     })
