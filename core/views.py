@@ -166,6 +166,75 @@ def somar_pagamentos_pedidos(pedidos):
 
     return dinheiro, pix, credito, debito
 
+GOOGLE_SHEETS_CONFERENCIA_URL = "https://script.google.com/macros/s/AKfycbzzKCquilK-2as85ZdVv3cT0m-PujpFww3_aW4Ik77TjDzqJqvTZU6QegCRD0ZnBYMDoA/exec"
+
+
+def enviar_fechamento_google_sheets(loja, data, vendas):
+    produtos_map = {}
+    for v in vendas:
+        nome = v.produto.nome
+        if nome not in produtos_map:
+            produtos_map[nome] = {"qtd": 0, "total": 0.0, "produto_obj": v.produto}
+        produtos_map[nome]["qtd"] += v.quantidade
+        produtos_map[nome]["total"] += float(v.quantidade * v.preco_unitario)
+
+    dinheiro = pix = credito = debito = gas_do_povo = 0.0
+    for v in vendas:
+        for forma, valor in [(v.forma_pagamento_1, v.valor_pagamento_1), (v.forma_pagamento_2, v.valor_pagamento_2)]:
+            if not forma or not valor:
+                continue
+            val = float(valor)
+            if forma == "dinheiro":
+                dinheiro += val
+            elif forma == "pix":
+                pix += val
+            elif forma == "credito":
+                credito += val
+            elif forma == "debito":
+                debito += val
+            elif forma == "gas_do_povo":
+                gas_do_povo += val
+
+    data_str = data.strftime("%d/%m/%Y")
+    linhas = []
+
+    for nome, info in sorted(produtos_map.items()):
+        p = info["produto_obj"]
+        linhas.append({
+            "data": data_str,
+            "produto": nome,
+            "qtd_vendida": info["qtd"],
+            "total_vendas": round(info["total"], 2),
+            "dinheiro": "",
+            "pix": "",
+            "credito": "",
+            "debito": "",
+            "gas_do_povo": "",
+            "estoque_cheio": p.estoque_cheio,
+            "estoque_vazio": p.estoque_vazio,
+        })
+
+    total_dia = round(dinheiro + pix + credito + debito + gas_do_povo, 2)
+    linhas.append({
+        "data": data_str,
+        "produto": "--- PAGAMENTOS ---",
+        "qtd_vendida": "",
+        "total_vendas": total_dia,
+        "dinheiro": round(dinheiro, 2),
+        "pix": round(pix, 2),
+        "credito": round(credito, 2),
+        "debito": round(debito, 2),
+        "gas_do_povo": round(gas_do_povo, 2),
+        "estoque_cheio": "",
+        "estoque_vazio": "",
+    })
+
+    try:
+        requests.post(GOOGLE_SHEETS_CONFERENCIA_URL, json={"linhas": linhas}, timeout=10)
+    except Exception as e:
+        print("Erro ao enviar fechamento para Google Sheets:", e)
+
+
 def enviar_para_google_sheets(venda):
     url = "COLE_AQUI_SEU_LINK_DO_GOOGLE_SCRIPT"
 
@@ -3118,11 +3187,13 @@ def salvar_fechamento_caixa(request):
     )
 
     registrar_auditoria(
-    loja=loja,
-    usuario=request.user,
-    acao="Fechamento de caixa salvo",
-    descricao=f"Data: {hoje.strftime('%d/%m/%Y')} | Total geral: R$ {total_geral}"
+        loja=loja,
+        usuario=request.user,
+        acao="Fechamento de caixa salvo",
+        descricao=f"Data: {hoje.strftime('%d/%m/%Y')} | Total geral: R$ {total_geral}"
     )
+
+    enviar_fechamento_google_sheets(loja, hoje, vendas)
 
     return redirect("/historico-fechamentos/")
 
