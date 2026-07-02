@@ -3817,7 +3817,7 @@ def relatorio_vendas(request):
         key=lambda x: x["nome"]
     )
 
-    # --- Estoque início/fim (apenas hoje e ontem) ---
+    # --- Estoque início/fim do período ---
     def _delta_movimentos(vendas_list, compras_list):
         d = {}
         for v in vendas_list:
@@ -3843,35 +3843,38 @@ def relatorio_vendas(request):
                     d[pid]["vazio"] -= c.quantidade
         return d
 
-    estoque_periodo = None
-    if filtro in ("hoje", "ontem"):
-        compras_periodo = list(CompraEstoque.objects.filter(
-            loja=loja,
-            data__date__gte=data_inicial,
-            data__date__lte=data_final,
-            status__in=["pendente", "aprovada"],
+    compras_periodo = list(CompraEstoque.objects.filter(
+        loja=loja,
+        data__date__gte=data_inicial,
+        data__date__lte=data_final,
+        status__in=["pendente", "aprovada"],
+    ))
+    delta_p = _delta_movimentos(vendas_ativas, compras_periodo)
+
+    # Movimentos após o período (para deduzir do estoque atual e obter fim do período)
+    delta_after = {}
+    if data_final < hoje:
+        v_after = list(Venda.objects.filter(
+            loja=loja, data_venda__date__gt=data_final, status="ativa"
+        ).select_related("produto"))
+        c_after = list(CompraEstoque.objects.filter(
+            loja=loja, data__date__gt=data_final, status__in=["pendente", "aprovada"]
         ))
-        delta_p = _delta_movimentos(vendas_ativas, compras_periodo)
+        delta_after = _delta_movimentos(v_after, c_after)
 
-        delta_hoje = {}
-        if filtro == "ontem":
-            v_hoje = list(Venda.objects.filter(loja=loja, data_venda__date=hoje, status="ativa").select_related("produto"))
-            c_hoje = list(CompraEstoque.objects.filter(loja=loja, data__date=hoje, status__in=["pendente", "aprovada"]))
-            delta_hoje = _delta_movimentos(v_hoje, c_hoje)
-
-        estoque_periodo = []
-        for p in Produto.objects.filter(loja=loja).order_by("nome"):
-            pid = p.id
-            dh = delta_hoje.get(pid, {"cheio": 0, "vazio": 0})
-            dp = delta_p.get(pid, {"cheio": 0, "vazio": 0})
-            fim_cheio = p.estoque_cheio - dh["cheio"]
-            fim_vazio = p.estoque_vazio - dh["vazio"]
-            estoque_periodo.append({
-                "nome": p.nome,
-                "inicio_cheio": fim_cheio - dp["cheio"],
-                "inicio_vazio": fim_vazio - dp["vazio"],
-                "fim_cheio": fim_cheio,
-                "fim_vazio": fim_vazio,
+    estoque_periodo = []
+    for p in Produto.objects.filter(loja=loja).order_by("nome"):
+        pid = p.id
+        da = delta_after.get(pid, {"cheio": 0, "vazio": 0})
+        dp = delta_p.get(pid, {"cheio": 0, "vazio": 0})
+        fim_cheio = p.estoque_cheio - da["cheio"]
+        fim_vazio = p.estoque_vazio - da["vazio"]
+        estoque_periodo.append({
+            "nome": p.nome,
+            "inicio_cheio": fim_cheio - dp["cheio"],
+            "inicio_vazio": fim_vazio - dp["vazio"],
+            "fim_cheio": fim_cheio,
+            "fim_vazio": fim_vazio,
             })
 
     return render(request, "relatorio.html", {
