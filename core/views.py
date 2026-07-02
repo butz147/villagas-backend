@@ -170,50 +170,70 @@ GOOGLE_SHEETS_CONFERENCIA_URL = "https://script.google.com/macros/s/AKfycbzzKCqu
 
 
 def _reconstruir_cheio(loja, produto, target_date):
-    """Estoque cheio ao fim de target_date via reconstrução forward."""
+    """
+    Estoque cheio ao fim de target_date.
+    Se existe ajuste_cheio registrado: forward a partir dele.
+    Senão (estoque configurado via admin): backward do estoque atual desfazendo ops posteriores.
+    """
     ult = MovimentacaoEstoque.objects.filter(
         loja=loja, produto=produto, tipo="ajuste_cheio",
         data_movimentacao__date__lte=target_date,
     ).order_by("-data_movimentacao").first()
 
-    cheio = ult.quantidade if ult else 0
-    desde = ult.data_movimentacao if ult else None
-
-    movs = MovimentacaoEstoque.objects.filter(
-        loja=loja, produto=produto,
-        tipo__in=["entrada", "saida"],
-        data_movimentacao__date__lte=target_date,
-    )
-    if desde:
-        movs = movs.filter(data_movimentacao__gt=desde)
-
-    for m in movs:
-        cheio += m.quantidade if m.tipo == "entrada" else -m.quantidade
+    if ult:
+        cheio = ult.quantidade
+        for m in MovimentacaoEstoque.objects.filter(
+            loja=loja, produto=produto,
+            tipo__in=["entrada", "saida"],
+            data_movimentacao__gt=ult.data_movimentacao,
+            data_movimentacao__date__lte=target_date,
+        ):
+            cheio += m.quantidade if m.tipo == "entrada" else -m.quantidade
+    else:
+        # Sem ajuste registrado: parte do estoque atual e desfaz ops posteriores a target_date
+        cheio = produto.estoque_cheio
+        for m in MovimentacaoEstoque.objects.filter(
+            loja=loja, produto=produto,
+            tipo__in=["entrada", "saida"],
+            data_movimentacao__date__gt=target_date,
+        ):
+            cheio += m.quantidade if m.tipo == "saida" else -m.quantidade
 
     return cheio
 
 
 def _reconstruir_vazio(loja, produto, target_date):
-    """Estoque vazio ao fim de target_date via reconstrução forward."""
+    """
+    Estoque vazio ao fim de target_date.
+    Se existe ajuste_vazio registrado: forward a partir dele.
+    Senão (estoque configurado via admin): backward do estoque atual desfazendo vendas posteriores.
+    """
     ult = MovimentacaoEstoque.objects.filter(
         loja=loja, produto=produto, tipo="ajuste_vazio",
         data_movimentacao__date__lte=target_date,
     ).order_by("-data_movimentacao").first()
 
-    vazio = ult.quantidade if ult else 0
-    desde = ult.data_movimentacao if ult else None
-
-    vendas = Venda.objects.filter(
-        loja=loja, produto=produto,
-        data_venda__date__lte=target_date,
-        status="ativa",
-        tipo_venda__in=["troca", "casco"],
-    )
-    if desde:
-        vendas = vendas.filter(data_venda__gt=desde)
-
-    for v in vendas:
-        vazio += v.quantidade if v.tipo_venda == "troca" else -v.quantidade
+    if ult:
+        vazio = ult.quantidade
+        for v in Venda.objects.filter(
+            loja=loja, produto=produto,
+            data_venda__gt=ult.data_movimentacao,
+            data_venda__date__lte=target_date,
+            status="ativa",
+            tipo_venda__in=["troca", "casco"],
+        ):
+            vazio += v.quantidade if v.tipo_venda == "troca" else -v.quantidade
+    else:
+        # Sem ajuste registrado: parte do estoque atual e desfaz vendas posteriores a target_date
+        vazio = produto.estoque_vazio
+        for v in Venda.objects.filter(
+            loja=loja, produto=produto,
+            data_venda__date__gt=target_date,
+            status="ativa",
+            tipo_venda__in=["troca", "casco"],
+        ):
+            # Desfaz: troca adicionou vazio → subtrai; casco removeu vazio → adiciona
+            vazio -= v.quantidade if v.tipo_venda == "troca" else -v.quantidade
 
     return vazio
 
