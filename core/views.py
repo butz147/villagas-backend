@@ -6118,6 +6118,247 @@ def conferencia_reenviar_compras(request):
     return render(request, "operacao_bloqueada.html", {"mensagem": mensagem})
 
 
+@login_required
+def lancamento_retroativo(request):
+    if not usuario_eh_gerente_ou_admin(request.user):
+        return render(request, "operacao_bloqueada.html", {
+            "mensagem": "Apenas gerente ou admin podem fazer lançamentos retroativos."
+        })
+
+    loja = obter_loja_usuario(request.user)
+    if not loja:
+        return render(request, "erro_loja.html")
+
+    produtos = Produto.objects.filter(loja=loja).order_by("nome")
+    funcionarios = User.objects.filter(perfis__loja=loja).order_by("username").distinct()
+    fornecedores = Fornecedor.objects.filter(loja=loja, ativo=True).order_by("nome")
+    clientes = Cliente.objects.filter(loja=loja, ativo=True).order_by("nome")
+    hoje = timezone.now().date()
+    ontem_str = (hoje - timedelta(days=1)).strftime("%Y-%m-%d")
+    hoje_str = hoje.strftime("%Y-%m-%d")
+
+    ctx_base = {
+        "loja": loja,
+        "produtos": produtos,
+        "funcionarios": funcionarios,
+        "fornecedores": fornecedores,
+        "clientes": clientes,
+        "hoje_str": hoje_str,
+        "ontem_str": ontem_str,
+    }
+
+    if request.method != "POST":
+        return render(request, "lancamento_retroativo.html", {**ctx_base, "tipo_ativo": "venda"})
+
+    tipo = request.POST.get("tipo", "")
+    data_str = request.POST.get("data", "").strip()
+
+    def erro(msg):
+        return render(request, "lancamento_retroativo.html", {
+            **ctx_base, "erro": msg, "tipo_ativo": tipo,
+        })
+
+    if not data_str:
+        return erro("Informe a data.")
+
+    try:
+        data_retroativa = datetime.strptime(data_str, "%Y-%m-%d").date()
+    except ValueError:
+        return erro("Data inválida.")
+
+    if data_retroativa >= hoje:
+        return erro("A data deve ser anterior a hoje.")
+
+    dt_retroativo = timezone.make_aware(
+        datetime.combine(data_retroativa, datetime.min.time().replace(hour=12))
+    )
+
+    if tipo == "retirada":
+        funcionario_id = request.POST.get("funcionario")
+        valor = request.POST.get("valor", "").strip()
+        tipo_ret = request.POST.get("tipo_ret", "").strip()
+        descricao = request.POST.get("descricao", "").strip()
+
+        if not valor or not tipo_ret:
+            return erro("Informe o funcionário, valor e tipo da retirada.")
+
+        try:
+            funcionario = User.objects.get(id=funcionario_id)
+        except (User.DoesNotExist, TypeError, ValueError):
+            return erro("Funcionário não encontrado.")
+
+        retirada = RetiradaFuncionario.objects.create(
+            loja=loja,
+            funcionario=funcionario,
+            registrado_por=request.user,
+            valor=valor,
+            tipo=tipo_ret,
+            descricao=descricao,
+        )
+        RetiradaFuncionario.objects.filter(id=retirada.id).update(data=dt_retroativo)
+
+        registrar_auditoria(
+            loja=loja,
+            usuario=request.user,
+            acao="Retirada retroativa lançada",
+            descricao=f"Retirada #{retirada.id} | Data: {data_retroativa} | Funcionário: {funcionario.username} | Tipo: {tipo_ret} | Valor: R$ {valor}"
+        )
+        return render(request, "lancamento_retroativo.html", {
+            **ctx_base,
+            "tipo_ativo": tipo,
+            "mensagem": f"Retirada de R$ {valor} lançada para {data_retroativa.strftime('%d/%m/%Y')}.",
+        })
+
+    elif tipo == "venda":
+        produto_id = request.POST.get("produto")
+        tipo_venda = request.POST.get("tipo_venda", "normal")
+        cliente_id = request.POST.get("cliente")
+        forma_pagamento_1 = request.POST.get("forma_pagamento_1", "dinheiro")
+        valor_pagamento_1 = request.POST.get("valor_pagamento_1", "").strip()
+
+        try:
+            quantidade = int(request.POST.get("quantidade", 0))
+            preco_decimal = Decimal(request.POST.get("preco", "0").replace(",", "."))
+        except (InvalidOperation, TypeError, ValueError):
+            return erro("Valores numéricos inválidos.")
+
+        if quantidade <= 0:
+            return erro("Quantidade deve ser maior que zero.")
+
+        try:
+            produto = Produto.objects.get(id=produto_id, loja=loja)
+        except Produto.DoesNotExist:
+            return erro("Produto não encontrado.")
+
+        if forma_pagamento_1 == "gas_do_povo":
+            valor_1 = Decimal(str(produto.preco_gas_do_povo))
+        else:
+            try:
+                valor_1 = Decimal(valor_pagamento_1.replace(",", ".")) if valor_pagamento_1 else Decimal("0.00")
+            except InvalidOperation:
+                return erro("Valor de pagamento inválido.")
+
+        cliente = None
+        if cliente_id:
+            try:
+                cliente = Cliente.objects.get(id=cliente_id, loja=loja)
+            except Cliente.DoesNotExist:
+                pass
+
+        if not produto.controla_retorno:
+            tipo_venda = "normal"
+            if produto.estoque_cheio < quantidade:
+                return erro(f"Estoque insuficiente. Disponível: {produto.estoque_cheio}.")
+        else:
+            if tipo_venda in ("troca", "completo") and produto.estoque_cheio < quantidade:
+                return erro(f"Estoque cheio insuficiente. Disponível: {produto.estoque_cheio}.")
+            elif tipo_venda == "casco" and produto.estoque_vazio < quantidade:
+                return erro(f"Estoque vazio insuficiente. Disponível: {produto.estoque_vazio}.")
+
+        venda = Venda.objects.create(
+            funcionario=request.user,
+            loja=loja,
+            cliente=cliente,
+            produto=produto,
+            quantidade=quantidade,
+            preco_unitario=preco_decimal,
+            forma_pagamento_1=forma_pagamento_1,
+            valor_pagamento_1=valor_1,
+            forma_pagamento_2=None,
+            valor_pagamento_2=None,
+            tipo_venda=tipo_venda,
+        )
+        Venda.objects.filter(id=venda.id).update(data_venda=dt_retroativo)
+
+        if not produto.controla_retorno:
+            produto.estoque_cheio -= quantidade
+        elif tipo_venda == "troca":
+            produto.estoque_cheio -= quantidade
+            produto.estoque_vazio += quantidade
+        elif tipo_venda == "completo":
+            produto.estoque_cheio -= quantidade
+        elif tipo_venda == "casco":
+            produto.estoque_vazio -= quantidade
+        produto.save()
+
+        registrar_auditoria(
+            loja=loja,
+            usuario=request.user,
+            acao="Venda retroativa lançada",
+            descricao=f"Venda #{venda.id} | Data: {data_retroativa} | Produto: {produto.nome} | Qtd: {quantidade} | Tipo: {tipo_venda}"
+        )
+        return render(request, "lancamento_retroativo.html", {
+            **ctx_base,
+            "tipo_ativo": tipo,
+            "mensagem": f"Venda de {quantidade}× {produto.nome} lançada para {data_retroativa.strftime('%d/%m/%Y')}.",
+        })
+
+    elif tipo == "compra":
+        produto_id = request.POST.get("produto")
+        fornecedor_post = request.POST.get("fornecedor", "").strip()
+        observacoes = request.POST.get("observacoes", "").strip()
+
+        def parse_int(val):
+            try:
+                return max(0, int(val or 0))
+            except (TypeError, ValueError):
+                return 0
+
+        cheios_entram = parse_int(request.POST.get("cheios_entram"))
+        cheios_saem   = parse_int(request.POST.get("cheios_saem"))
+        vazios_entram = parse_int(request.POST.get("vazios_entram"))
+        vazios_saem   = parse_int(request.POST.get("vazios_saem"))
+
+        if cheios_entram == 0 and cheios_saem == 0 and vazios_entram == 0 and vazios_saem == 0:
+            return erro("Informe pelo menos uma movimentação (cheios ou vazios).")
+
+        try:
+            produto = Produto.objects.get(id=produto_id, loja=loja)
+        except Produto.DoesNotExist:
+            return erro("Produto não encontrado.")
+
+        if produto.estoque_cheio + cheios_entram - cheios_saem < 0:
+            return erro(f"Estoque cheio insuficiente. Disponível: {produto.estoque_cheio}.")
+        if produto.estoque_vazio + vazios_entram - vazios_saem < 0:
+            return erro(f"Estoque vazio insuficiente. Disponível: {produto.estoque_vazio}.")
+
+        tipo_compra = "troca" if vazios_saem > 0 else "somente_cheio"
+
+        compra = CompraEstoque.objects.create(
+            loja=loja,
+            produto=produto,
+            fornecedor=fornecedor_post,
+            quantidade=cheios_entram,
+            tipo_compra=tipo_compra,
+            cheios_entram=cheios_entram,
+            cheios_saem=cheios_saem,
+            vazios_entram=vazios_entram,
+            vazios_saem=vazios_saem,
+            registrado_por=request.user,
+            observacoes=observacoes,
+            status="pendente",
+        )
+        CompraEstoque.objects.filter(id=compra.id).update(data=dt_retroativo)
+
+        produto.estoque_cheio += cheios_entram - cheios_saem
+        produto.estoque_vazio += vazios_entram - vazios_saem
+        produto.save()
+
+        registrar_auditoria(
+            loja=loja,
+            usuario=request.user,
+            acao="Compra retroativa lançada",
+            descricao=f"Compra #{compra.id} | Data: {data_retroativa} | Produto: {produto.nome} | Fornecedor: {fornecedor_post}"
+        )
+        return render(request, "lancamento_retroativo.html", {
+            **ctx_base,
+            "tipo_ativo": tipo,
+            "mensagem": f"Compra de {produto.nome} lançada para {data_retroativa.strftime('%d/%m/%Y')}.",
+        })
+
+    return erro("Tipo de lançamento inválido.")
+
+
 def conferencia_reenviar_dia(request):
     if not usuario_eh_gerente_ou_admin(request.user):
         return render(request, "operacao_bloqueada.html", {

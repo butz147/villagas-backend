@@ -112,6 +112,9 @@ from core.views import (
     conferencia_reenviar_historico,
     conferencia_reenviar_dia,
     conferencia_reenviar_compras,
+
+    # lançamento retroativo
+    lancamento_retroativo,
 )
 
 from core.views import notificacoes_json, trocar_loja
@@ -235,6 +238,9 @@ urlpatterns = [
     path('conferencia/reenviar-historico/', conferencia_reenviar_historico, name='conferencia_reenviar_historico'),
     path('conferencia/reenviar-dia/', conferencia_reenviar_dia, name='conferencia_reenviar_dia'),
     path('conferencia/reenviar-compras/', conferencia_reenviar_compras, name='conferencia_reenviar_compras'),
+
+    # lançamento retroativo
+    path('lancamento-retroativo/', lancamento_retroativo, name='lancamento_retroativo'),
 ]
 
 if settings.DEBUG:
