@@ -126,6 +126,11 @@
             <a href="/comissoes/"><i class="bi bi-percent"></i> Comissões</a>
             <a href="/fornecedores/"><i class="bi bi-building"></i> Fornecedores</a>
         </div>
+        <div class="mobile-nav-section">
+            <div class="mobile-nav-title"><i class="bi bi-table"></i> Planilha</div>
+            <a href="/conferencia/reenviar-dia/" class="{% if request.path == '/conferencia/reenviar-dia/' %}active{% endif %}"><i class="bi bi-calendar-event"></i> Reenviar Dia</a>
+            <a href="/conferencia/reenviar-compras/" class="{% if request.path == '/conferencia/reenviar-compras/' %}active{% endif %}"><i class="bi bi-bag-check"></i> Reenviar Compras</a>
+        </div>
         {% endif %}
         <a href="/logout/" class="mobile-slide-logout"><i class="bi bi-box-arrow-right"></i> Sair do Sistema</a>
     </nav>
@@ -310,6 +315,15 @@
                 </a>
                 <a class="{% if request.path == '/metricas-entregadores/' %}active{% endif %}" href="/metricas-entregadores/">
                     <i class="bi bi-bar-chart-line"></i> <span>Métricas Entregadores</span>
+                </a>
+            </div>
+            <div class="nav-group">
+                <div class="nav-group-title"><i class="bi bi-table"></i> Planilha</div>
+                <a class="{% if request.path == '/conferencia/reenviar-dia/' %}active{% endif %}" href="/conferencia/reenviar-dia/">
+                    <i class="bi bi-calendar-event"></i> <span>Reenviar Dia</span>
+                </a>
+                <a class="{% if request.path == '/conferencia/reenviar-compras/' %}active{% endif %}" href="/conferencia/reenviar-compras/">
+                    <i class="bi bi-bag-check"></i> <span>Reenviar Compras</span>
                 </a>
             </div>
             {% endif %}
