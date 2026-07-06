@@ -6088,18 +6088,44 @@ def conferencia_reenviar_compras(request):
     if not loja:
         return render(request, "erro_loja.html")
 
+    if request.method == "GET":
+        return render(request, "conferencia_reenviar_compras.html")
+
+    data_ini_str = request.POST.get("data_ini", "").strip()
+    data_fim_str = request.POST.get("data_fim", "").strip()
+
+    try:
+        data_ini = datetime.strptime(data_ini_str, "%Y-%m-%d").date()
+        data_fim = datetime.strptime(data_fim_str, "%Y-%m-%d").date()
+    except ValueError:
+        return render(request, "conferencia_reenviar_compras.html", {"erro": "Datas inválidas."})
+
+    if data_ini > data_fim:
+        return render(request, "conferencia_reenviar_compras.html", {
+            "erro": "A data inicial deve ser anterior ou igual à final."
+        })
+
     try:
         requests.post(
             GOOGLE_SHEETS_CONFERENCIA_URL,
-            json={"action": "clear_compras"},
+            json={
+                "action": "clear_compras_range",
+                "de": data_ini.strftime("%d/%m/%Y"),
+                "ate": data_fim.strftime("%d/%m/%Y"),
+            },
             headers={"Content-Type": "application/json"},
             allow_redirects=True,
             timeout=30,
         )
     except Exception as e:
-        print("Erro ao limpar aba Compras:", e)
+        print("Erro ao limpar intervalo de compras:", e)
 
-    compras = CompraEstoque.objects.filter(loja=loja).order_by("data")
+    compras = CompraEstoque.objects.filter(
+        loja=loja,
+        data__date__gte=data_ini,
+        data__date__lte=data_fim,
+    ).order_by("data")
+
     enviados = 0
     erros = 0
     for compra in compras:
@@ -6110,12 +6136,13 @@ def conferencia_reenviar_compras(request):
             erros += 1
 
     total = compras.count()
+    periodo = f"{data_ini.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
     if erros == 0:
-        mensagem = f"Aba Compras limpa e reenviada: {enviados} de {total} compra(s)."
+        mensagem = f"{enviados} de {total} compra(s) reenviadas ({periodo})."
     else:
-        mensagem = f"{enviados} de {total} compra(s) enviadas, {erros} com erro."
+        mensagem = f"{enviados} de {total} compra(s) enviadas, {erros} com erro ({periodo})."
 
-    return render(request, "operacao_bloqueada.html", {"mensagem": mensagem})
+    return render(request, "conferencia_reenviar_compras.html", {"mensagem": mensagem})
 
 
 @login_required
@@ -6372,41 +6399,58 @@ def conferencia_reenviar_dia(request):
     if request.method == "GET":
         return render(request, "conferencia_reenviar_dia.html")
 
-    data_str = request.POST.get("data", "").strip()
-    if not data_str:
-        return render(request, "conferencia_reenviar_dia.html", {"erro": "Informe uma data."})
+    data_ini_str = request.POST.get("data_ini", "").strip()
+    data_fim_str = request.POST.get("data_fim", "").strip()
 
     try:
-        data = datetime.strptime(data_str, "%Y-%m-%d").date()
+        data_ini = datetime.strptime(data_ini_str, "%Y-%m-%d").date()
+        data_fim = datetime.strptime(data_fim_str, "%Y-%m-%d").date()
     except ValueError:
-        return render(request, "conferencia_reenviar_dia.html", {"erro": "Data inválida."})
+        return render(request, "conferencia_reenviar_dia.html", {"erro": "Datas inválidas."})
 
-    vendas_dia = Venda.objects.filter(
-        loja=loja, data_venda__date=data, status="ativa"
-    ).select_related("produto")
-
-    if not vendas_dia.exists():
+    if data_ini > data_fim:
         return render(request, "conferencia_reenviar_dia.html", {
-            "erro": f"Nenhuma venda encontrada em {data.strftime('%d/%m/%Y')}."
+            "erro": "A data inicial deve ser anterior ou igual à final."
         })
 
-    # Remove as linhas desse dia na planilha antes de reinserir
-    data_formatada = data.strftime("%d/%m/%Y")
-    try:
-        requests.post(
-            GOOGLE_SHEETS_CONFERENCIA_URL,
-            json={"action": "clear_date", "data": data_formatada},
-            headers={"Content-Type": "application/json"},
-            allow_redirects=True,
-            timeout=30,
-        )
-    except Exception as e:
-        print("Erro ao limpar dia na planilha:", e)
+    enviados = 0
+    erros = 0
+    sem_vendas = 0
+    data_atual = data_ini
+    while data_atual <= data_fim:
+        vendas_dia = Venda.objects.filter(
+            loja=loja, data_venda__date=data_atual, status="ativa"
+        ).select_related("produto")
 
-    ok = enviar_fechamento_google_sheets(loja, data, vendas_dia)
-    if ok:
-        mensagem = f"Dia {data_formatada} reenviado com sucesso para a planilha."
+        if vendas_dia.exists():
+            data_formatada = data_atual.strftime("%d/%m/%Y")
+            try:
+                requests.post(
+                    GOOGLE_SHEETS_CONFERENCIA_URL,
+                    json={"action": "clear_date", "data": data_formatada},
+                    headers={"Content-Type": "application/json"},
+                    allow_redirects=True,
+                    timeout=30,
+                )
+            except Exception as e:
+                print("Erro ao limpar dia na planilha:", e)
+
+            ok = enviar_fechamento_google_sheets(loja, data_atual, vendas_dia)
+            if ok:
+                enviados += 1
+            else:
+                erros += 1
+        else:
+            sem_vendas += 1
+
+        data_atual += timedelta(days=1)
+
+    periodo = f"{data_ini.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
+    if erros == 0:
+        mensagem = f"{enviados} dia(s) reenviados ({periodo})."
+        if sem_vendas:
+            mensagem += f" {sem_vendas} dia(s) sem vendas ignorados."
     else:
-        mensagem = f"Erro ao enviar {data_formatada} para a planilha. Verifique o log do servidor."
+        mensagem = f"{enviados} dia(s) enviados, {erros} com erro ({periodo})."
 
     return render(request, "conferencia_reenviar_dia.html", {"mensagem": mensagem})
