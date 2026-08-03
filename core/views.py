@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db import models, transaction
 from django.http import HttpResponse, JsonResponse
@@ -467,6 +468,14 @@ def registrar_auditoria(loja, usuario, acao, descricao=""):
         descricao=descricao,
     )
 
+LOGIN_MAX_TENTATIVAS = 5
+LOGIN_BLOQUEIO_SEGUNDOS = 15 * 60
+
+
+def _login_cache_key(username):
+    return f"login_tentativas:{(username or '').strip().lower()}"
+
+
 def login_usuario(request):
     if request.user.is_authenticated:
         if usuario_eh_admin(request.user):
@@ -484,26 +493,34 @@ def login_usuario(request):
         eh_folguista = request.POST.get("eh_folguista") == "1"
         folguista_nome = request.POST.get("folguista_nome", "").strip()
 
-        user = authenticate(request, username=username, password=password)
+        cache_key = _login_cache_key(username)
+        tentativas = cache.get(cache_key, 0)
 
-        if user is not None:
-            login(request, user)
-
-            if eh_folguista and folguista_nome:
-                request.session["folguista_ativo"] = True
-                request.session["folguista_nome"] = folguista_nome
-            else:
-                request.session["folguista_ativo"] = False
-                request.session["folguista_nome"] = ""
-
-            if usuario_eh_admin(user):
-                return redirect("/admin-geral/")
-            elif usuario_eh_gerente(user):
-                return redirect("/")
-            else:
-                return redirect("/")
+        if tentativas >= LOGIN_MAX_TENTATIVAS:
+            erro = "Muitas tentativas de login. Tente novamente em alguns minutos."
         else:
-            erro = "Usuário ou senha inválidos."
+            user = authenticate(request, username=username, password=password)
+
+            if user is not None:
+                cache.delete(cache_key)
+                login(request, user)
+
+                if eh_folguista and folguista_nome:
+                    request.session["folguista_ativo"] = True
+                    request.session["folguista_nome"] = folguista_nome
+                else:
+                    request.session["folguista_ativo"] = False
+                    request.session["folguista_nome"] = ""
+
+                if usuario_eh_admin(user):
+                    return redirect("/admin-geral/")
+                elif usuario_eh_gerente(user):
+                    return redirect("/")
+                else:
+                    return redirect("/")
+            else:
+                cache.set(cache_key, tentativas + 1, LOGIN_BLOQUEIO_SEGUNDOS)
+                erro = "Usuário ou senha inválidos."
 
     return render(request, "login.html", {"erro": erro})
 
