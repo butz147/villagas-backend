@@ -455,32 +455,6 @@ def enviar_fechamento_google_sheets(loja, data, vendas):
         return False
 
 
-def enviar_para_google_sheets(venda):
-    url = "COLE_AQUI_SEU_LINK_DO_GOOGLE_SCRIPT"
-
-    pagamento_texto = f"{venda.forma_pagamento_1} - R$ {venda.valor_pagamento_1}"
-    if venda.forma_pagamento_2 and venda.valor_pagamento_2:
-        pagamento_texto += f" | {venda.forma_pagamento_2} - R$ {venda.valor_pagamento_2}"
-
-    dados = {
-        "data": venda.data_venda.strftime("%d/%m/%Y"),
-        "hora": venda.data_venda.strftime("%H:%M"),
-        "loja": venda.loja.nome if venda.loja else "",
-        "cliente": venda.cliente.nome if venda.cliente else "Sem cliente",
-        "produto": venda.produto.nome,
-        "tipo_venda": venda.get_tipo_venda_display(),
-        "quantidade": venda.quantidade,
-        "preco": str(venda.preco_unitario),
-        "pagamento": pagamento_texto,
-        "funcionario": venda.funcionario.username
-    }
-
-    try:
-        requests.post(url, json=dados, timeout=10)
-    except Exception as e:
-        print("Erro ao enviar para Google Sheets:", e)
-
-
 def lista_produtos(request):
     return render(request, 'produtos.html')
 
@@ -761,8 +735,6 @@ def registrar_venda(request):
                     )
 
             produto.save()
-
-        enviar_para_google_sheets(venda)
 
         registrar_auditoria(
             loja=loja,
