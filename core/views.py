@@ -762,6 +762,8 @@ def registrar_venda(request):
         return redirect("/venda/")
 
     hoje = timezone.now().date()
+    ontem = hoje - timedelta(days=1)
+
     vendas_hoje = Venda.objects.filter(
         loja=loja,
         data_venda__date=hoje,
@@ -769,12 +771,22 @@ def registrar_venda(request):
     ).order_by("-data_venda").select_related("produto", "funcionario", "cliente")
     total_hoje = sum(v.total_venda() for v in vendas_hoje)
 
+    vendas_ontem = Venda.objects.filter(
+        loja=loja,
+        data_venda__date=ontem,
+        status="ativa"
+    ).order_by("-data_venda").select_related("produto", "funcionario", "cliente")
+    total_ontem = sum(v.total_venda() for v in vendas_ontem)
+
     return render(request, "venda.html", {
         "produtos": produtos,
         "clientes": clientes,
         "loja": loja,
         "vendas_hoje": vendas_hoje,
         "total_hoje": total_hoje,
+        "vendas_ontem": vendas_ontem,
+        "total_ontem": total_ontem,
+        "data_ontem": ontem,
     })
 
 @login_required
