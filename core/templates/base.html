@@ -106,6 +106,7 @@
             <a href="/relatorio/"><i class="bi bi-file-earmark-text"></i> Relatório</a>
             <a href="/despesas/"><i class="bi bi-receipt-cutoff"></i> Despesas</a>
             <a href="/vendas-antecipadas/"><i class="bi bi-calendar-check"></i> Vendas Antecip.</a>
+            <a href="/lancamento-retroativo/"><i class="bi bi-clock-history"></i> Retroativo</a>
             <a href="/comodatos/"><i class="bi bi-arrow-repeat"></i> Comodatos</a>
         </div>
         <div class="mobile-nav-section">
@@ -258,6 +259,9 @@
                 </a>
                 <a class="{% if request.path == '/vendas-antecipadas/' %}active{% endif %}" href="/vendas-antecipadas/">
                     <i class="bi bi-calendar-check"></i> <span>Vendas Antecipadas</span>
+                </a>
+                <a class="{% if request.path == '/lancamento-retroativo/' %}active{% endif %}" href="/lancamento-retroativo/">
+                    <i class="bi bi-clock-history"></i> <span>Retroativo</span>
                 </a>
                 <a class="{% if request.path == '/comodatos/' %}active{% endif %}" href="/comodatos/">
                     <i class="bi bi-arrow-repeat"></i> <span>Comodatos</span>
