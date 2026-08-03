@@ -26,9 +26,26 @@ import os
 SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+# Antes tinha default 'True' - se a variável de ambiente DEBUG não estivesse
+# setada no servidor, o site rodava com debug ligado (expõe stack trace e
+# código-fonte em qualquer erro 500).
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['*']
+# Antes era ['*'] (aceita qualquer Host header). Restringe aos domínios
+# conhecidos do sistema. Se algum domínio/IP legítimo faltar aqui e isso
+# derrubar o acesso, dá pra corrigir na hora setando a variável de ambiente
+# ALLOWED_HOSTS (separada por vírgula) no servidor e reiniciando o serviço,
+# sem precisar de novo deploy de código.
+_allowed_hosts_env = os.environ.get('ALLOWED_HOSTS')
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',') if h.strip()]
+else:
+    ALLOWED_HOSTS = [
+        'admin.villagaz.com.br',
+        'villagaz.com.br',
+        'www.villagaz.com.br',
+        '159.223.111.33',
+    ]
 
 
 # Application definition
@@ -260,6 +277,11 @@ CSRF_TRUSTED_ORIGINS = [
     'https://admin.villagaz.com.br',
     'https://villagas-7wv23nbx7-butzps147-1591s-projects.vercel.app',
 ]
+
+# Todos os domínios acima são HTTPS - garante que os cookies de sessão e
+# CSRF nunca trafeguem em texto puro por HTTP.
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 
 LOGGING = {
