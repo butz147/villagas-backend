@@ -12,28 +12,28 @@
     <div class="card metric-card metric-yellow">
         <div class="metric-icon"><i class="bi bi-cart-fill"></i></div>
         <h3>Vendas do dia</h3>
-        <div class="value">R$ {{ total_vendas }}</div>
+        <div class="value">R$ {{ total_vendas|floatformat:2 }}</div>
         <p>Quantidade: {{ quantidade_vendas }}</p>
     </div>
 
     <div class="card metric-card metric-yellow">
         <div class="metric-icon"><i class="bi bi-receipt-cutoff"></i></div>
         <h3>Pedidos do dia</h3>
-        <div class="value">R$ {{ total_pedidos }}</div>
+        <div class="value">R$ {{ total_pedidos|floatformat:2 }}</div>
         <p>Quantidade: {{ quantidade_pedidos }}</p>
     </div>
 
     <div class="card metric-card metric-red">
         <div class="metric-icon"><i class="bi bi-cash-stack"></i></div>
         <h3>Despesas do dia</h3>
-        <div class="value">R$ {{ total_despesas }}</div>
+        <div class="value">R$ {{ total_despesas|floatformat:2 }}</div>
         <p>Quantidade: {{ quantidade_despesas }}</p>
     </div>
 
     <div class="card metric-card metric-red">
         <div class="metric-icon"><i class="bi bi-box-arrow-up-right"></i></div>
         <h3>Retiradas do dia</h3>
-        <div class="value">R$ {{ total_retiradas }}</div>
+        <div class="value">R$ {{ total_retiradas|floatformat:2 }}</div>
         <p>Quantidade: {{ quantidade_retiradas }}</p>
     </div>
 </div>
@@ -43,7 +43,7 @@
         <div class="metric-icon"><i class="bi bi-graph-up-arrow"></i></div>
         <h3>Lucro líquido</h3>
         <div class="value {% if lucro_liquido >= 0 %}positive{% else %}negative{% endif %}">
-            R$ {{ lucro_liquido }}
+            R$ {{ lucro_liquido|floatformat:2 }}
         </div>
     </div>
 
@@ -51,14 +51,14 @@
         <div class="metric-icon"><i class="bi bi-wallet2"></i></div>
         <h3>Saldo acumulado</h3>
         <div class="value {% if saldo_acumulado >= 0 %}positive{% else %}negative{% endif %}">
-            R$ {{ saldo_acumulado }}
+            R$ {{ saldo_acumulado|floatformat:2 }}
         </div>
     </div>
 
     <div class="card metric-card metric-red">
         <div class="metric-icon"><i class="bi bi-pin-angle-fill"></i></div>
         <h3>Contas pendentes</h3>
-        <div class="value">R$ {{ total_contas_pendentes }}</div>
+        <div class="value">R$ {{ total_contas_pendentes|floatformat:2 }}</div>
     </div>
 
     <div class="card metric-card metric-cream">

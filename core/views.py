@@ -3605,6 +3605,14 @@ def admin_geral(request):
     for conta in ContaPagar.objects.filter(loja=loja, status="pendente"):
         total_contas_pendentes += float(conta.valor)
 
+    total_vendas = round(total_vendas, 2)
+    total_pedidos = round(total_pedidos, 2)
+    total_despesas = round(total_despesas, 2)
+    total_retiradas = round(total_retiradas, 2)
+    lucro_liquido = round(lucro_liquido, 2)
+    saldo_acumulado = round(saldo_acumulado, 2)
+    total_contas_pendentes = round(total_contas_pendentes, 2)
+
     compras_pendentes = CompraEstoque.objects.filter(
         loja=loja,
         status="pendente"
