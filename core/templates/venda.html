@@ -205,7 +205,7 @@
     </div>
 
     <div id="tab-hoje">
-        <div class="section-title">Vendas de hoje — {{ vendas_hoje|length }} venda{{ vendas_hoje|length|pluralize:"s" }} | Total: R$ {{ total_hoje }}</div>
+        <div class="section-title">Vendas de hoje — {{ vendas_hoje|length }} venda{{ vendas_hoje|length|pluralize:"s" }} | Total: R$ {{ total_hoje|floatformat:2 }}</div>
         {% if vendas_hoje %}
         <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
@@ -230,9 +230,9 @@
                         <td style="padding:8px 10px;">{{ v.data_venda|time:"H:i" }}</td>
                         <td style="padding:8px 10px;">{{ v.produto.nome }}</td>
                         <td style="padding:8px 10px;">{{ v.quantidade }}</td>
-                        <td style="padding:8px 10px;">R$ {{ v.preco_unitario }}</td>
-                        <td style="padding:8px 10px;">R$ {{ v.total_venda }}</td>
-                        <td style="padding:8px 10px;font-weight:600;">R$ {{ v.valor_pagamento_1 }}{% if v.valor_pagamento_2 %} + R$ {{ v.valor_pagamento_2 }}{% endif %}</td>
+                        <td style="padding:8px 10px;">R$ {{ v.preco_unitario|floatformat:2 }}</td>
+                        <td style="padding:8px 10px;">R$ {{ v.total_venda|floatformat:2 }}</td>
+                        <td style="padding:8px 10px;font-weight:600;">R$ {{ v.valor_pagamento_1|floatformat:2 }}{% if v.valor_pagamento_2 %} + R$ {{ v.valor_pagamento_2|floatformat:2 }}{% endif %}</td>
                         <td style="padding:8px 10px;">{{ v.get_forma_pagamento_1_display }}{% if v.forma_pagamento_2 %} + {{ v.get_forma_pagamento_2_display }}{% endif %}</td>
                         <td style="padding:8px 10px;">{{ v.funcionario.username }}</td>
                         {% if perfil_ativo.tipo_usuario == "gerente" or perfil_ativo.tipo_usuario == "admin" %}
@@ -251,7 +251,7 @@
     </div>
 
     <div id="tab-ontem" style="display:none;">
-        <div class="section-title">Vendas de ontem{% if data_ontem %} — {{ data_ontem|date:"d/m/Y" }}{% endif %} — {{ vendas_ontem|length }} venda{{ vendas_ontem|length|pluralize:"s" }} | Total: R$ {{ total_ontem }}</div>
+        <div class="section-title">Vendas de ontem{% if data_ontem %} — {{ data_ontem|date:"d/m/Y" }}{% endif %} — {{ vendas_ontem|length }} venda{{ vendas_ontem|length|pluralize:"s" }} | Total: R$ {{ total_ontem|floatformat:2 }}</div>
         {% if vendas_ontem %}
         <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
@@ -273,9 +273,9 @@
                         <td style="padding:8px 10px;">{{ v.data_venda|time:"H:i" }}</td>
                         <td style="padding:8px 10px;">{{ v.produto.nome }}</td>
                         <td style="padding:8px 10px;">{{ v.quantidade }}</td>
-                        <td style="padding:8px 10px;">R$ {{ v.preco_unitario }}</td>
-                        <td style="padding:8px 10px;">R$ {{ v.total_venda }}</td>
-                        <td style="padding:8px 10px;font-weight:600;">R$ {{ v.valor_pagamento_1 }}{% if v.valor_pagamento_2 %} + R$ {{ v.valor_pagamento_2 }}{% endif %}</td>
+                        <td style="padding:8px 10px;">R$ {{ v.preco_unitario|floatformat:2 }}</td>
+                        <td style="padding:8px 10px;">R$ {{ v.total_venda|floatformat:2 }}</td>
+                        <td style="padding:8px 10px;font-weight:600;">R$ {{ v.valor_pagamento_1|floatformat:2 }}{% if v.valor_pagamento_2 %} + R$ {{ v.valor_pagamento_2|floatformat:2 }}{% endif %}</td>
                         <td style="padding:8px 10px;">{{ v.get_forma_pagamento_1_display }}{% if v.forma_pagamento_2 %} + {{ v.get_forma_pagamento_2_display }}{% endif %}</td>
                         <td style="padding:8px 10px;">{{ v.funcionario.username }}</td>
                     </tr>

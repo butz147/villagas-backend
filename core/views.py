@@ -603,11 +603,11 @@ def registrar_venda(request):
             cliente = Cliente.objects.get(id=cliente_id, loja=loja)
 
         try:
-            preco_decimal = Decimal(preco)
+            preco_decimal = Decimal(preco).quantize(Decimal("0.01"))
             total_venda = Decimal(quantidade) * preco_decimal
 
-            valor_1 = Decimal(valor_pagamento_1) if valor_pagamento_1 else Decimal("0.00")
-            valor_2 = Decimal(valor_pagamento_2) if valor_pagamento_2 else Decimal("0.00")
+            valor_1 = (Decimal(valor_pagamento_1) if valor_pagamento_1 else Decimal("0.00")).quantize(Decimal("0.01"))
+            valor_2 = (Decimal(valor_pagamento_2) if valor_pagamento_2 else Decimal("0.00")).quantize(Decimal("0.01"))
         except (InvalidOperation, TypeError):
             return render(request, "venda.html", {
                 "produtos": produtos,
