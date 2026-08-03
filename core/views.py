@@ -11,7 +11,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.db import models
+from django.db import models, transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -577,7 +577,18 @@ def registrar_venda(request):
     if request.method == "POST":
         produto_id = request.POST.get("produto")
         cliente_id = request.POST.get("cliente")
-        quantidade = int(request.POST.get("quantidade"))
+        quantidade_raw = request.POST.get("quantidade")
+        try:
+            quantidade = int(quantidade_raw)
+            if quantidade <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return render(request, "venda.html", {
+                "produtos": produtos,
+                "clientes": clientes,
+                "loja": loja,
+                "erro": "Quantidade inválida."
+            })
         preco = request.POST.get("preco")
 
         forma_pagamento_1 = request.POST.get("forma_pagamento_1")
@@ -588,143 +599,119 @@ def registrar_venda(request):
 
         tipo_venda = request.POST.get("tipo_venda", "normal")
 
-        produto = Produto.objects.get(id=produto_id, loja=loja)
+        with transaction.atomic():
+            produto = Produto.objects.select_for_update().get(id=produto_id, loja=loja)
 
-        # Gás do Povo: valor definido pelo preco_gas_do_povo do produto no admin
-        if forma_pagamento_1 == "gas_do_povo":
-            valor_pagamento_1 = str(produto.preco_gas_do_povo)
-            valor_pagamento_2 = None
-            forma_pagamento_2 = None
-        elif forma_pagamento_2 == "gas_do_povo":
-            valor_pagamento_2 = str(produto.preco_gas_do_povo)
+            # Gás do Povo: valor definido pelo preco_gas_do_povo do produto no admin
+            if forma_pagamento_1 == "gas_do_povo":
+                valor_pagamento_1 = str(produto.preco_gas_do_povo)
+                valor_pagamento_2 = None
+                forma_pagamento_2 = None
+            elif forma_pagamento_2 == "gas_do_povo":
+                valor_pagamento_2 = str(produto.preco_gas_do_povo)
 
-        cliente = None
-        if cliente_id:
-            cliente = Cliente.objects.get(id=cliente_id, loja=loja)
+            cliente = None
+            if cliente_id:
+                cliente = Cliente.objects.get(id=cliente_id, loja=loja)
 
-        try:
-            preco_decimal = Decimal(preco).quantize(Decimal("0.01"))
-            total_venda = Decimal(quantidade) * preco_decimal
+            try:
+                preco_decimal = Decimal(preco).quantize(Decimal("0.01"))
+                total_venda = Decimal(quantidade) * preco_decimal
 
-            valor_1 = (Decimal(valor_pagamento_1) if valor_pagamento_1 else Decimal("0.00")).quantize(Decimal("0.01"))
-            valor_2 = (Decimal(valor_pagamento_2) if valor_pagamento_2 else Decimal("0.00")).quantize(Decimal("0.01"))
-        except (InvalidOperation, TypeError):
-            return render(request, "venda.html", {
-                "produtos": produtos,
-                "clientes": clientes,
-                "loja": loja,
-                "erro": "Valores inválidos."
-            })
-
-        if not forma_pagamento_2:
-            forma_pagamento_2 = None
-            valor_2 = Decimal("0.00")
-
-        soma_pagamentos = (valor_1 + valor_2).quantize(Decimal("0.01"))
-        total_venda = total_venda.quantize(Decimal("0.01"))
-
-        if forma_pagamento_1 != "gas_do_povo" and valor_1 <= 0:
-            return render(request, "venda.html", {
-                "produtos": produtos,
-                "clientes": clientes,
-                "loja": loja,
-                "erro": "O valor do pagamento 1 deve ser maior que zero."
-            })
-
-        if forma_pagamento_2 and forma_pagamento_2 != "gas_do_povo" and valor_2 <= 0:
-            return render(request, "venda.html", {
-                "produtos": produtos,
-                "clientes": clientes,
-                "loja": loja,
-                "erro": "O valor do pagamento 2 deve ser maior que zero."
-            })
-
-        if not produto.controla_retorno:
-            tipo_venda = "normal"
-
-            if produto.estoque_cheio < quantidade:
+                valor_1 = (Decimal(valor_pagamento_1) if valor_pagamento_1 else Decimal("0.00")).quantize(Decimal("0.01"))
+                valor_2 = (Decimal(valor_pagamento_2) if valor_pagamento_2 else Decimal("0.00")).quantize(Decimal("0.01"))
+            except (InvalidOperation, TypeError):
                 return render(request, "venda.html", {
                     "produtos": produtos,
                     "clientes": clientes,
                     "loja": loja,
-                    "erro": "Estoque insuficiente."
+                    "erro": "Valores inválidos."
                 })
-        else:
-            if tipo_venda == "troca":
+
+            if not forma_pagamento_2:
+                forma_pagamento_2 = None
+                valor_2 = Decimal("0.00")
+
+            soma_pagamentos = (valor_1 + valor_2).quantize(Decimal("0.01"))
+            total_venda = total_venda.quantize(Decimal("0.01"))
+
+            if forma_pagamento_1 != "gas_do_povo" and valor_1 <= 0:
+                return render(request, "venda.html", {
+                    "produtos": produtos,
+                    "clientes": clientes,
+                    "loja": loja,
+                    "erro": "O valor do pagamento 1 deve ser maior que zero."
+                })
+
+            if forma_pagamento_2 and forma_pagamento_2 != "gas_do_povo" and valor_2 <= 0:
+                return render(request, "venda.html", {
+                    "produtos": produtos,
+                    "clientes": clientes,
+                    "loja": loja,
+                    "erro": "O valor do pagamento 2 deve ser maior que zero."
+                })
+
+            if not produto.controla_retorno:
+                tipo_venda = "normal"
+
                 if produto.estoque_cheio < quantidade:
                     return render(request, "venda.html", {
                         "produtos": produtos,
                         "clientes": clientes,
                         "loja": loja,
-                        "erro": "Estoque cheio insuficiente para troca."
+                        "erro": "Estoque insuficiente."
                     })
-
-            elif tipo_venda == "completo":
-                if produto.estoque_cheio < quantidade:
-                    return render(request, "venda.html", {
-                        "produtos": produtos,
-                        "clientes": clientes,
-                        "loja": loja,
-                        "erro": "Estoque cheio insuficiente para venda completa."
-                    })
-
-            elif tipo_venda == "casco":
-                if produto.estoque_vazio < quantidade:
-                    return render(request, "venda.html", {
-                        "produtos": produtos,
-                        "clientes": clientes,
-                        "loja": loja,
-                        "erro": "Estoque vazio insuficiente para venda de casco."
-                    })
-
             else:
-                return render(request, "venda.html", {
-                    "produtos": produtos,
-                    "clientes": clientes,
-                    "loja": loja,
-                    "erro": "Tipo de venda inválido para produto retornável."
-                })
+                if tipo_venda == "troca":
+                    if produto.estoque_cheio < quantidade:
+                        return render(request, "venda.html", {
+                            "produtos": produtos,
+                            "clientes": clientes,
+                            "loja": loja,
+                            "erro": "Estoque cheio insuficiente para troca."
+                        })
 
-        venda = Venda.objects.create(
-            funcionario=request.user,
-            loja=loja,
-            cliente=cliente,
-            produto=produto,
-            quantidade=quantidade,
-            preco_unitario=preco_decimal,
-            forma_pagamento_1=forma_pagamento_1,
-            valor_pagamento_1=valor_1,
-            forma_pagamento_2=forma_pagamento_2,
-            valor_pagamento_2=valor_2 if forma_pagamento_2 else None,
-            tipo_venda=tipo_venda,
-        )
+                elif tipo_venda == "completo":
+                    if produto.estoque_cheio < quantidade:
+                        return render(request, "venda.html", {
+                            "produtos": produtos,
+                            "clientes": clientes,
+                            "loja": loja,
+                            "erro": "Estoque cheio insuficiente para venda completa."
+                        })
 
-        if not produto.controla_retorno:
-            produto.estoque_cheio -= quantidade
+                elif tipo_venda == "casco":
+                    if produto.estoque_vazio < quantidade:
+                        return render(request, "venda.html", {
+                            "produtos": produtos,
+                            "clientes": clientes,
+                            "loja": loja,
+                            "erro": "Estoque vazio insuficiente para venda de casco."
+                        })
 
-            MovimentacaoEstoque.objects.create(
+                else:
+                    return render(request, "venda.html", {
+                        "produtos": produtos,
+                        "clientes": clientes,
+                        "loja": loja,
+                        "erro": "Tipo de venda inválido para produto retornável."
+                    })
+
+            venda = Venda.objects.create(
+                funcionario=request.user,
                 loja=loja,
+                cliente=cliente,
                 produto=produto,
-                usuario=request.user,
-                tipo="saida",
                 quantidade=quantidade,
-                motivo="Venda normal de produto simples"
+                preco_unitario=preco_decimal,
+                forma_pagamento_1=forma_pagamento_1,
+                valor_pagamento_1=valor_1,
+                forma_pagamento_2=forma_pagamento_2,
+                valor_pagamento_2=valor_2 if forma_pagamento_2 else None,
+                tipo_venda=tipo_venda,
             )
-        else:
-            if tipo_venda == "troca":
-                produto.estoque_cheio -= quantidade
-                produto.estoque_vazio += quantidade
 
-                MovimentacaoEstoque.objects.create(
-                    loja=loja,
-                    produto=produto,
-                    usuario=request.user,
-                    tipo="saida",
-                    quantidade=quantidade,
-                    motivo="Venda por troca - saída de cheio"
-                )
-
-            elif tipo_venda == "completo":
+            if not produto.controla_retorno:
                 produto.estoque_cheio -= quantidade
 
                 MovimentacaoEstoque.objects.create(
@@ -733,22 +720,47 @@ def registrar_venda(request):
                     usuario=request.user,
                     tipo="saida",
                     quantidade=quantidade,
-                    motivo="Venda completa - saída de cheio sem retorno de vazio"
+                    motivo="Venda normal de produto simples"
                 )
+            else:
+                if tipo_venda == "troca":
+                    produto.estoque_cheio -= quantidade
+                    produto.estoque_vazio += quantidade
 
-            elif tipo_venda == "casco":
-                produto.estoque_vazio -= quantidade
+                    MovimentacaoEstoque.objects.create(
+                        loja=loja,
+                        produto=produto,
+                        usuario=request.user,
+                        tipo="saida",
+                        quantidade=quantidade,
+                        motivo="Venda por troca - saída de cheio"
+                    )
 
-                MovimentacaoEstoque.objects.create(
-                    loja=loja,
-                    produto=produto,
-                    usuario=request.user,
-                    tipo="saida",
-                    quantidade=quantidade,
-                    motivo="Venda de casco - saída de vazio"
-                )
+                elif tipo_venda == "completo":
+                    produto.estoque_cheio -= quantidade
 
-        produto.save()
+                    MovimentacaoEstoque.objects.create(
+                        loja=loja,
+                        produto=produto,
+                        usuario=request.user,
+                        tipo="saida",
+                        quantidade=quantidade,
+                        motivo="Venda completa - saída de cheio sem retorno de vazio"
+                    )
+
+                elif tipo_venda == "casco":
+                    produto.estoque_vazio -= quantidade
+
+                    MovimentacaoEstoque.objects.create(
+                        loja=loja,
+                        produto=produto,
+                        usuario=request.user,
+                        tipo="saida",
+                        quantidade=quantidade,
+                        motivo="Venda de casco - saída de vazio"
+                    )
+
+            produto.save()
 
         enviar_para_google_sheets(venda)
 
@@ -1860,6 +1872,11 @@ def cancelar_venda(request, venda_id):
     if not loja:
         return render(request, "erro_loja.html")
 
+    if not usuario_eh_gerente_ou_admin(request.user):
+        return render(request, "operacao_bloqueada.html", {
+            "mensagem": "Apenas gerente ou admin podem cancelar vendas."
+        })
+
     if dia_fechado(loja):
         return render(request, "operacao_bloqueada.html", {
             "mensagem": "O dia de hoje já foi fechado. Não é possível cancelar vendas."
@@ -1886,37 +1903,39 @@ def cancelar_venda(request, venda_id):
             "voltar_url": "/venda/",
         })
 
-    produto = venda.produto
     quantidade = venda.quantidade
 
-    if not produto.controla_retorno:
-        produto.estoque_cheio += quantidade
-    else:
-        if venda.tipo_venda == "troca":
+    with transaction.atomic():
+        produto = Produto.objects.select_for_update().get(id=venda.produto_id)
+
+        if not produto.controla_retorno:
             produto.estoque_cheio += quantidade
-            produto.estoque_vazio -= quantidade
-            if produto.estoque_vazio < 0:
-                produto.estoque_vazio = 0
-        elif venda.tipo_venda == "completo":
-            produto.estoque_cheio += quantidade
-        elif venda.tipo_venda == "casco":
-            produto.estoque_vazio += quantidade
         else:
-            produto.estoque_cheio += quantidade
+            if venda.tipo_venda == "troca":
+                produto.estoque_cheio += quantidade
+                produto.estoque_vazio -= quantidade
+                if produto.estoque_vazio < 0:
+                    produto.estoque_vazio = 0
+            elif venda.tipo_venda == "completo":
+                produto.estoque_cheio += quantidade
+            elif venda.tipo_venda == "casco":
+                produto.estoque_vazio += quantidade
+            else:
+                produto.estoque_cheio += quantidade
 
-    produto.save()
+        produto.save()
 
-    venda.status = "cancelada"
-    venda.save()
+        venda.status = "cancelada"
+        venda.save()
 
-    MovimentacaoEstoque.objects.create(
-        loja=loja,
-        produto=produto,
-        usuario=request.user,
-        tipo="entrada",
-        quantidade=quantidade,
-        motivo=f"Cancelamento da venda #{venda.id}"
-    )
+        MovimentacaoEstoque.objects.create(
+            loja=loja,
+            produto=produto,
+            usuario=request.user,
+            tipo="entrada",
+            quantidade=quantidade,
+            motivo=f"Cancelamento da venda #{venda.id}"
+        )
 
     registrar_auditoria(
         loja=loja,
