@@ -591,7 +591,15 @@ def registrar_venda(request):
         tipo_venda = request.POST.get("tipo_venda", "normal")
 
         with transaction.atomic():
-            produto = Produto.objects.select_for_update().get(id=produto_id, loja=loja)
+            try:
+                produto = Produto.objects.select_for_update().get(id=produto_id, loja=loja)
+            except Produto.DoesNotExist:
+                return render(request, "venda.html", {
+                    "produtos": produtos,
+                    "clientes": clientes,
+                    "loja": loja,
+                    "erro": "Produto inválido."
+                })
 
             # Gás do Povo: valor definido pelo preco_gas_do_povo do produto no admin
             if forma_pagamento_1 == "gas_do_povo":
@@ -603,7 +611,15 @@ def registrar_venda(request):
 
             cliente = None
             if cliente_id:
-                cliente = Cliente.objects.get(id=cliente_id, loja=loja)
+                try:
+                    cliente = Cliente.objects.get(id=cliente_id, loja=loja)
+                except Cliente.DoesNotExist:
+                    return render(request, "venda.html", {
+                        "produtos": produtos,
+                        "clientes": clientes,
+                        "loja": loja,
+                        "erro": "Cliente inválido."
+                    })
 
             try:
                 preco_decimal = Decimal(preco).quantize(Decimal("0.01"))
