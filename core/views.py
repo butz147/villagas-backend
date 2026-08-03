@@ -143,7 +143,7 @@ def somar_pagamentos_mistos(vendas):
         elif venda.forma_pagamento_2 == "gas_do_povo":
             gas_do_povo += float(venda.valor_pagamento_2 or 0)
 
-    return dinheiro, pix, credito, debito, gas_do_povo
+    return round(dinheiro, 2), round(pix, 2), round(credito, 2), round(debito, 2), round(gas_do_povo, 2)
 
 
 def somar_pagamentos_pedidos(pedidos):
@@ -840,6 +840,7 @@ def dashboard(request):
     total_periodo = 0
     for venda in vendas_periodo:
         total_periodo += float(venda.quantidade * venda.preco_unitario)
+    total_periodo = round(total_periodo, 2)
 
     dinheiro, pix, credito, debito, gas_do_povo_soma = somar_pagamentos_mistos(vendas_periodo)
 
@@ -880,6 +881,9 @@ def dashboard(request):
             venda.quantidade * venda.preco_unitario
         )
 
+    for dados in resumo_funcionarios.values():
+        dados["valor_total"] = round(dados["valor_total"], 2)
+
     ranking_funcionarios = sorted(
         resumo_funcionarios.items(),
         key=lambda item: item[1]["valor_total"],
@@ -897,7 +901,7 @@ def dashboard(request):
             total_dia += float(venda.quantidade * venda.preco_unitario)
 
         labels.append(dia_atual.strftime("%d/%m"))
-        valores.append(float(total_dia))
+        valores.append(round(float(total_dia), 2))
         dia_atual += timedelta(days=1)
 
     return render(request, "dashboard.html", {

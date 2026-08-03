@@ -46,7 +46,7 @@
     <div class="card metric-card metric-yellow">
         <div class="metric-icon"><i class="bi bi-currency-dollar"></i></div>
         <h3>Faturamento</h3>
-        <div class="value">R$ {{ total }}</div>
+        <div class="value">R$ {{ total|floatformat:2 }}</div>
         <p>Período filtrado</p>
     </div>
 
@@ -121,7 +121,7 @@
                 <tr>
                     <td>{{ nome }}</td>
                     <td>{{ dados.quantidade_vendas }}</td>
-                    <td>R$ {{ dados.valor_total }}</td>
+                    <td>R$ {{ dados.valor_total|floatformat:2 }}</td>
                 </tr>
                 {% empty %}
                 <tr>
