@@ -3034,6 +3034,63 @@ def retiradas_funcionarios(request):
     })
 
 @login_required
+def historico_retiradas(request):
+    loja = obter_loja_usuario(request.user)
+
+    if not loja:
+        return render(request, "erro_loja.html")
+
+    if not usuario_eh_gerente_ou_admin(request.user):
+        return render(request, "operacao_bloqueada.html", {
+            "mensagem": "Apenas administradores e gerentes podem ver o histórico de retiradas."
+        })
+
+    hoje = timezone.now().date()
+    filtro = request.GET.get("filtro", "mes")
+
+    if filtro == "hoje":
+        data_inicial = hoje
+        data_final = hoje
+    elif filtro == "ontem":
+        data_inicial = hoje - timedelta(days=1)
+        data_final = data_inicial
+    elif filtro == "7dias":
+        data_inicial = hoje - timedelta(days=6)
+        data_final = hoje
+    elif filtro == "mes":
+        data_inicial = hoje.replace(day=1)
+        data_final = hoje
+    elif filtro == "personalizado":
+        try:
+            data_inicial = datetime.strptime(request.GET.get("data_inicial"), "%Y-%m-%d").date()
+            data_final = datetime.strptime(request.GET.get("data_final"), "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            filtro = "mes"
+            data_inicial = hoje.replace(day=1)
+            data_final = hoje
+    else:
+        filtro = "mes"
+        data_inicial = hoje.replace(day=1)
+        data_final = hoje
+
+    retiradas = RetiradaFuncionario.objects.filter(
+        loja=loja,
+        data__date__gte=data_inicial,
+        data__date__lte=data_final,
+    ).select_related("funcionario", "registrado_por").order_by("-data")
+
+    total = sum(float(r.valor) for r in retiradas)
+
+    return render(request, "historico_retiradas.html", {
+        "loja": loja,
+        "retiradas": retiradas,
+        "total": total,
+        "filtro": filtro,
+        "data_inicial": data_inicial,
+        "data_final": data_final,
+    })
+
+@login_required
 def lucro_diario(request):
     loja = obter_loja_usuario(request.user)
 

@@ -104,6 +104,7 @@
             <a href="/dashboard/"><i class="bi bi-speedometer2"></i> Dashboard</a>
             <a href="/fechamento-caixa/"><i class="bi bi-cash-stack"></i> Fechamento</a>
             <a href="/retiradas-funcionarios/" class="{% if request.path == '/retiradas-funcionarios/' %}active{% endif %}"><i class="bi bi-wallet2"></i> Retiradas</a>
+            <a href="/retiradas-funcionarios/historico/" class="{% if request.path == '/retiradas-funcionarios/historico/' %}active{% endif %}"><i class="bi bi-clock-history"></i> Histórico Retiradas</a>
             <a href="/relatorio/"><i class="bi bi-file-earmark-text"></i> Relatório</a>
             <a href="/despesas/"><i class="bi bi-receipt-cutoff"></i> Despesas</a>
             <a href="/vendas-antecipadas/"><i class="bi bi-calendar-check"></i> Vendas Antecip.</a>
@@ -257,6 +258,9 @@
                 </a>
                 <a class="{% if request.path == '/retiradas-funcionarios/' %}active{% endif %}" href="/retiradas-funcionarios/">
                     <i class="bi bi-wallet2"></i> <span>Retiradas</span>
+                </a>
+                <a class="{% if request.path == '/retiradas-funcionarios/historico/' %}active{% endif %}" href="/retiradas-funcionarios/historico/">
+                    <i class="bi bi-clock-history"></i> <span>Histórico Retiradas</span>
                 </a>
                 <a class="{% if request.path == '/vendas-antecipadas/' %}active{% endif %}" href="/vendas-antecipadas/">
                     <i class="bi bi-calendar-check"></i> <span>Vendas Antecipadas</span>

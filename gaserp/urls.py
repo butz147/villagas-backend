@@ -48,6 +48,7 @@ from core.views import (
     # financeiro
     despesas,
     retiradas_funcionarios,
+    historico_retiradas,
     contas_pagar,
     pagar_conta,
     contas_receber,
@@ -174,6 +175,7 @@ urlpatterns = [
     # financeiro
     path('despesas/', despesas),
     path('retiradas-funcionarios/', retiradas_funcionarios),
+    path('retiradas-funcionarios/historico/', historico_retiradas),
     path('contas-pagar/', contas_pagar),
     path('contas-pagar/<int:conta_id>/pagar/', pagar_conta),
     path('contas-receber/', contas_receber),
